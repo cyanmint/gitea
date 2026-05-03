@@ -1770,6 +1770,12 @@ func registerWebRoutes(m *web.Router, webAuth *AuthMiddleware) {
 		})
 	}
 
+	// SPA catch-all: serve the SPA shell for any unmatched GET request so that
+	// the Vue Router running in the browser can handle client-side navigation.
+	// This must be registered before m.NotFound so that new frontend routes are
+	// served the HTML shell rather than a 404 response.
+	m.Get("/*", SPA)
+
 	m.NotFound(func(w http.ResponseWriter, req *http.Request) {
 		ctx := context.GetWebContext(req.Context())
 		defer routing.RecordFuncInfo(ctx, routing.GetFuncInfo(ctx.NotFound, "WebNotFound"))()

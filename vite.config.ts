@@ -179,6 +179,7 @@ function reducedSourcemapPlugin(): Plugin {
   const standalonePrefixes = [
     'js/index.',
     'js/iife.',
+    'js/spa.',
     'js/swagger.',
     'js/external-render-frontend.',
     'js/external-render-helper.',
@@ -269,6 +270,7 @@ export default defineConfig(commonViteOpts({
       input: {
         // FIXME: INCORRECT-VITE-MANIFEST-PARSER: the "css importing" logic in backend is wrong
         index: join(import.meta.dirname, 'web_src/js/index.ts'),
+        spa: join(import.meta.dirname, 'web_src/js/spa/main.ts'),
         swagger: join(import.meta.dirname, 'web_src/js/swagger.ts'),
         'external-render-frontend': join(import.meta.dirname, 'web_src/js/external-render-frontend.ts'),
         'eventsource.sharedworker': join(import.meta.dirname, 'web_src/js/eventsource.sharedworker.ts'),
