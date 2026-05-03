@@ -119,7 +119,7 @@ const reposLoading = ref(false);
 
 const joinedDate = computed(() => {
   if (!user.value) return '';
-  return new Date(user.value.created).toLocaleDateString('en-US', {year: 'numeric', month: 'long'});
+  return new Date(user.value.created).toLocaleDateString(navigator.language || 'en-US', {year: 'numeric', month: 'long'});
 });
 
 function timeAgo(dateStr: string): string {

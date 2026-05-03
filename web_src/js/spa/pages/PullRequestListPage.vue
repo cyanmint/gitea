@@ -57,7 +57,7 @@
               <p class="tw-text-xs tw-text-gray-500 tw-mt-1">
                 #{{ pr.number }}
                 <template v-if="pr.merged">
-                  merged {{ timeAgo(pr.merged_at!) }} by
+                  merged {{ timeAgo(pr.merged_at ?? '') }} by
                   <a :href="`${appSubUrl}/${pr.user.login}`" class="hover:tw-underline">{{ pr.user.login }}</a>
                 </template>
                 <template v-else>

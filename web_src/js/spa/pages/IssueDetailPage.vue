@@ -134,8 +134,9 @@ onMounted(async () => {
   try {
     issue.value = await getIssue(owner, repoName, issueIndex);
   } catch (err) {
-    notFound.value = String(err).includes('404') || String(err).includes('not found');
-    error.value = err instanceof Error ? err.message : 'Failed to load issue';
+    const msg = err instanceof Error ? err.message : String(err);
+    notFound.value = msg.includes('404') || msg.toLowerCase().includes('not found');
+    error.value = msg;
     loading.value = false;
     return;
   }

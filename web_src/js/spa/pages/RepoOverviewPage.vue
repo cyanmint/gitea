@@ -141,8 +141,7 @@ const issues = ref<Issue[]>([]);
 /** Returns the browse URL for a repository content item (file or directory). */
 function contentItemUrl(item: ContentsResponse): string {
   const branch = repo.value?.default_branch ?? 'HEAD';
-  const prefix = item.type === 'dir' ? 'src/branch' : 'raw/branch';
-  return `${appSubUrl}/${owner}/${repoName}/${prefix}/${branch}/${item.path}`;
+  return `${appSubUrl}/${owner}/${repoName}/src/branch/${branch}/${item.path}`;
 }
 
 onMounted(async () => {

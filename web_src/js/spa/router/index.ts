@@ -48,9 +48,10 @@ export const router = createRouter({
   },
 });
 
-// Capture the application name from the page's initial title (e.g. "Gitea")
-// once at startup before any navigation modifies it.
-const appName = document.title.split(' - ').pop() ?? 'Gitea';
+// Capture the application name once at startup. The initial page title has the
+// form "Page Title - AppName"; if there's no separator, the whole string is used.
+const titleParts = document.title.split(' - ');
+const appName = titleParts.length > 1 ? titleParts.at(-1)! : titleParts[0] || 'Gitea';
 
 // Update document title on route change
 router.afterEach((to) => {
