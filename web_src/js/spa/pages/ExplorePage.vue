@@ -149,11 +149,11 @@ async function loadData() {
     if (activeTab.value === 'repos') {
       const result = await searchRepos(query.value, {page: page.value, limit: pageSize});
       repos.value = result.data ?? [];
-      totalPages.value = Math.max(1, Math.ceil(repos.value.length / pageSize));
+      totalPages.value = Math.max(1, Math.ceil(result.totalCount / pageSize));
     } else if (activeTab.value === 'users') {
       const result = await searchUsers(query.value, {page: page.value, limit: pageSize});
       users.value = result.data ?? [];
-      totalPages.value = 1;
+      totalPages.value = Math.max(1, Math.ceil(result.totalCount / pageSize));
     }
   } catch (err) {
     error.value = err instanceof Error ? err.message : 'An error occurred';

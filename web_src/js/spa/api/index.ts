@@ -1,4 +1,4 @@
-import {GET, POST} from '../../modules/fetch.ts';
+import {GET} from '../../modules/fetch.ts';
 
 const {appSubUrl} = window.config;
 
@@ -100,11 +100,13 @@ export type ContentsResponse = {
 export type RepoSearchResult = {
   data: Repository[];
   ok: boolean;
+  totalCount: number;
 };
 
 export type UserSearchResult = {
   data: User[];
   ok: boolean;
+  totalCount: number;
 };
 
 export type PaginationOpts = {
@@ -128,7 +130,8 @@ export async function searchUsers(query: string, opts: PaginationOpts = {}): Pro
   const params = new URLSearchParams({q: query, page: String(opts.page ?? 1), limit: String(opts.limit ?? 20)});
   const resp = await GET(`${apiBase}/users/search?${params}`);
   if (!resp.ok) throw new Error(`Failed to search users: ${resp.status}`);
-  return resp.json();
+  const body = await resp.json() as Omit<UserSearchResult, 'totalCount'>;
+  return {...body, totalCount: parseInt(resp.headers.get('X-Total-Count') ?? '0', 10)};
 }
 
 // ---- Repositories ----
@@ -144,7 +147,8 @@ export async function searchRepos(query: string, opts: PaginationOpts & {sort?: 
   });
   const resp = await GET(`${apiBase}/repos/search?${params}`);
   if (!resp.ok) throw new Error(`Failed to search repos: ${resp.status}`);
-  return resp.json();
+  const body = await resp.json() as Omit<RepoSearchResult, 'totalCount'>;
+  return {...body, totalCount: parseInt(resp.headers.get('X-Total-Count') ?? '0', 10)};
 }
 
 /** Get a single repository. */
@@ -180,19 +184,5 @@ export async function getRepoIssues(owner: string, repo: string, opts: Paginatio
   });
   const resp = await GET(`${apiBase}/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/issues?${params}`);
   if (!resp.ok) throw new Error(`Failed to fetch issues: ${resp.status}`);
-  return resp.json();
-}
-
-/** Sign in with username and password via the API basic auth, creating a token. */
-export async function signIn(username: string, password: string): Promise<{token: string} | null> {
-  const resp = await POST(`${apiBase}/users/${encodeURIComponent(username)}/tokens`, {
-    headers: {
-      'Authorization': `Basic ${btoa(`${username}:${password}`)}`,
-      'Content-Type': 'application/json',
-    },
-    data: {name: `spa-session-${Date.now()}`, scopes: ['all']},
-  });
-  if (resp.status === 401) return null;
-  if (!resp.ok) throw new Error(`Sign-in failed: ${resp.status}`);
   return resp.json();
 }

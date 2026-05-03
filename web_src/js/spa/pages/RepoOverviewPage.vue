@@ -78,7 +78,7 @@
           >
             <span class="tw-text-gray-500 tw-w-4">{{ item.type === 'dir' ? '📁' : '📄' }}</span>
             <a
-              :href="`${appSubUrl}/${owner}/${repoName}/${item.type === 'dir' ? 'src/branch/' + repo.default_branch + '/' + item.path : 'raw/branch/' + repo.default_branch + '/' + item.path}`"
+              :href="contentItemUrl(item)"
               class="tw-font-medium tw-text-blue-600 hover:tw-underline"
             >
               {{ item.name }}
@@ -137,6 +137,13 @@ const contentsCount = ref(0);
 
 const issuesLoading = ref(false);
 const issues = ref<Issue[]>([]);
+
+/** Returns the browse URL for a repository content item (file or directory). */
+function contentItemUrl(item: ContentsResponse): string {
+  const branch = repo.value?.default_branch ?? 'HEAD';
+  const prefix = item.type === 'dir' ? 'src/branch' : 'raw/branch';
+  return `${appSubUrl}/${owner}/${repoName}/${prefix}/${branch}/${item.path}`;
+}
 
 onMounted(async () => {
   try {

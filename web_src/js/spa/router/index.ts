@@ -38,10 +38,14 @@ export const router = createRouter({
   },
 });
 
+// Capture the application name from the page's initial title (e.g. "Gitea")
+// once at startup before any navigation modifies it.
+const appName = document.title.split(' - ').pop() ?? 'Gitea';
+
 // Update document title on route change
 router.afterEach((to) => {
   const title = to.meta.title as string | undefined;
   if (title) {
-    document.title = `${title} - ${document.title.split(' - ').pop() ?? 'Gitea'}`;
+    document.title = `${title} - ${appName}`;
   }
 });
