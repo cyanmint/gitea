@@ -2,7 +2,12 @@ import {createRouter, createWebHistory, type RouteRecordRaw} from 'vue-router';
 import HomePage from '../pages/HomePage.vue';
 import ExplorePage from '../pages/ExplorePage.vue';
 import LoginPage from '../pages/LoginPage.vue';
+import RegisterPage from '../pages/RegisterPage.vue';
+import UserProfilePage from '../pages/UserProfilePage.vue';
 import RepoOverviewPage from '../pages/RepoOverviewPage.vue';
+import IssueListPage from '../pages/IssueListPage.vue';
+import IssueDetailPage from '../pages/IssueDetailPage.vue';
+import PullRequestListPage from '../pages/PullRequestListPage.vue';
 import NotFoundPage from '../pages/NotFoundPage.vue';
 
 const {appSubUrl} = window.config;
@@ -19,11 +24,16 @@ const routes: RouteRecordRaw[] = [
 
   // Auth
   {path: '/user/login', component: LoginPage, meta: {title: 'Sign In', public: true}},
+  {path: '/user/sign_up', component: RegisterPage, meta: {title: 'Register', public: true}},
 
-  // Repository routes — the SPA handles the top-level overview page.
-  // Sub-paths (src/branch/…, issues/…, etc.) are still served by the
-  // Go backend and will be gradually migrated to the SPA in future phases.
+  // Repository routes
   {path: '/:owner/:repo', component: RepoOverviewPage, meta: {title: 'Repository'}},
+  {path: '/:owner/:repo/issues', component: IssueListPage, meta: {title: 'Issues'}},
+  {path: '/:owner/:repo/issues/:id', component: IssueDetailPage, meta: {title: 'Issue'}},
+  {path: '/:owner/:repo/pulls', component: PullRequestListPage, meta: {title: 'Pull Requests'}},
+
+  // User / org profile — comes after repo routes so /:owner/:repo wins
+  {path: '/:username', component: UserProfilePage, meta: {title: 'Profile', public: true}},
 
   // 404 catch-all
   {path: '/:pathMatch(.*)*', component: NotFoundPage, meta: {title: 'Page Not Found', public: true}},

@@ -503,7 +503,7 @@ func registerWebRoutes(m *web.Router, webAuth *AuthMiddleware) {
 	// FIXME: not all routes need go through same middleware.
 	// Especially some AJAX requests, we can reduce middleware number to improve performance.
 
-	m.Get("/", Home)
+	m.Get("/", SPA)
 	m.Get("/sitemap.xml", sitemapEnabled, optExploreSignIn, HomeSitemap)
 	m.Group("/.well-known", func() {
 		m.Get("/openid-configuration", auth.OIDCWellKnown)
@@ -527,11 +527,11 @@ func registerWebRoutes(m *web.Router, webAuth *AuthMiddleware) {
 		m.Get("", func(ctx *context.Context) {
 			ctx.Redirect(setting.AppSubURL + "/explore/repos")
 		})
-		m.Get("/repos", explore.Repos)
+		m.Get("/repos", SPA)
 		m.Get("/repos/sitemap-{idx}.xml", sitemapEnabled, explore.Repos)
-		m.Get("/users", explore.Users)
+		m.Get("/users", SPA)
 		m.Get("/users/sitemap-{idx}.xml", sitemapEnabled, explore.Users)
-		m.Get("/organizations", explore.Organizations)
+		m.Get("/organizations", SPA)
 		m.Get("/code", func(ctx *context.Context) {
 			if unit.TypeCode.UnitGlobalDisabled() {
 				ctx.NotFound(nil)
@@ -551,7 +551,7 @@ func registerWebRoutes(m *web.Router, webAuth *AuthMiddleware) {
 
 	// ***** START: User *****
 	// "user/login" doesn't need signOut, then logged-in users can still access this route for redirection purposes by "/user/login?redirec_to=..."
-	m.Get("/user/login", auth.SignIn)
+	m.Get("/user/login", SPA)
 	m.Group("/user", func() {
 		m.Post("/login", web.Bind(forms.SignInForm{}), auth.SignInPost)
 		m.Group("", func() {
@@ -569,7 +569,7 @@ func registerWebRoutes(m *web.Router, webAuth *AuthMiddleware) {
 					Post(web.Bind(forms.SignUpOpenIDForm{}), auth.RegisterOpenIDPost)
 			}, openIDSignUpEnabled)
 		}, openIDSignInEnabled)
-		m.Get("/sign_up", auth.SignUp)
+		m.Get("/sign_up", SPA)
 		m.Post("/sign_up", web.Bind(forms.RegisterForm{}), auth.SignUpPost)
 		m.Get("/link_account", auth.LinkAccount)
 		m.Post("/link_account_signin", web.Bind(forms.SignInForm{}), auth.LinkAccountPostSignIn)
@@ -870,7 +870,7 @@ func registerWebRoutes(m *web.Router, webAuth *AuthMiddleware) {
 
 	m.Group("", func() {
 		// it handles "username.rss" in the handler, so allow basic auth as other rss/atom routes
-		m.Get("/{username}", webAuth.AllowBasic, user.UsernameSubRoute)
+		m.Get("/{username}", webAuth.AllowBasic, SPAOrFeed(user.UsernameSubRoute))
 		m.Methods("GET, OPTIONS", "/attachments/{uuid}", optionsCorsHandler(), webAuth.AllowBasic, webAuth.AllowOAuth2, repo.GetAttachment)
 	}, optSignIn)
 
@@ -1252,7 +1252,7 @@ func registerWebRoutes(m *web.Router, webAuth *AuthMiddleware) {
 	// end "/{username}/{reponame}/settings"
 
 	// user/org home, including rss feeds like "/{username}/{reponame}.rss"
-	m.Get("/{username}/{reponame}", optSignIn, webAuth.AllowBasic, context.RepoAssignment, context.RepoRefByType(git.RefTypeBranch), repo.SetEditorconfigIfExists, repo.Home)
+	m.Get("/{username}/{reponame}", optSignIn, SPA)
 
 	m.Post("/{username}/{reponame}/markup", optSignIn, context.RepoAssignment, reqUnitsWithMarkdown, web.Bind(structs.MarkupOption{}), misc.Markup)
 
@@ -1303,10 +1303,9 @@ func registerWebRoutes(m *web.Router, webAuth *AuthMiddleware) {
 	// end "/{username}/{reponame}": view milestone, label, issue, pull, etc
 
 	m.Group("/{username}/{reponame}/{type:issues}", func() {
-		// these handlers also check unit permissions internally
-		m.Get("", repo.Issues)
-		m.Get("/{index}", repo.ViewIssue) // also do pull-request redirection (".../issues/{PR-number}" -> ".../pulls/{PR-number}")
-	}, optSignIn, context.RepoAssignment, context.RequireUnitReader(unit.TypeIssues, unit.TypePullRequests, unit.TypeExternalTracker))
+		m.Get("", SPA)
+		m.Get("/{index}", SPA)
+	}, optSignIn)
 	// end "/{username}/{reponame}": issue list, issue view (pull-request redirection), external tracker
 
 	m.Group("/{username}/{reponame}", func() { // edit issues, pulls, labels, milestones, etc
@@ -1611,9 +1610,9 @@ func registerWebRoutes(m *web.Router, webAuth *AuthMiddleware) {
 	// end "/{username}/{reponame}/activity"
 
 	m.Group("/{username}/{reponame}", func() {
-		m.Get("/{type:pulls}", repo.Issues)
+		m.Get("/{type:pulls}", SPA)
 		m.Group("/{type:pulls}/{index}", func() {
-			m.Get("", repo.SetEditorconfigIfExists, repo.SetWhitespaceBehavior, repo.GetPullDiffStats, repo.ViewIssue)
+			m.Get("", SPA)
 			m.Get(".diff", repo.DownloadPullDiff)
 			m.Get(".patch", repo.DownloadPullPatch)
 			m.Get("/merge_box", repo.ViewPullMergeBox)

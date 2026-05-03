@@ -14,7 +14,7 @@
     <div v-else-if="repo" class="ui container tw-py-4">
       <!-- Repo header -->
       <div class="tw-flex tw-items-center tw-gap-2 tw-mb-4">
-        <a :href="`${appSubUrl}/${owner}`" class="tw-text-blue-600 hover:tw-underline tw-text-lg">{{ owner }}</a>
+        <RouterLink :to="`/${owner}`" class="tw-text-blue-600 hover:tw-underline tw-text-lg">{{ owner }}</RouterLink>
         <span class="tw-text-gray-400">/</span>
         <span class="tw-font-semibold tw-text-lg">{{ repoName }}</span>
         <span v-if="repo.private" class="ui mini label">Private</span>
@@ -32,9 +32,9 @@
         <a :href="`${appSubUrl}/${owner}/${repoName}/forks`" class="tw-flex tw-items-center tw-gap-1 hover:tw-text-blue-600">
           <span>🍴</span> <span class="tw-font-medium">{{ repo.forks_count }}</span> Forks
         </a>
-        <a :href="`${appSubUrl}/${owner}/${repoName}/issues`" class="tw-flex tw-items-center tw-gap-1 hover:tw-text-blue-600">
+        <RouterLink :to="`/${owner}/${repoName}/issues`" class="tw-flex tw-items-center tw-gap-1 hover:tw-text-blue-600">
           <span>🔴</span> <span class="tw-font-medium">{{ repo.open_issues_count }}</span> Issues
-        </a>
+        </RouterLink>
       </div>
 
       <!-- Clone URL bar -->
@@ -91,7 +91,7 @@
       <div class="tw-mt-8">
         <h3 class="tw-font-semibold tw-text-lg tw-mb-3">
           Recent Issues
-          <a :href="`${appSubUrl}/${owner}/${repoName}/issues`" class="tw-text-blue-600 tw-text-sm tw-font-normal tw-ml-2">View all →</a>
+          <RouterLink :to="`/${owner}/${repoName}/issues`" class="tw-text-blue-600 tw-text-sm tw-font-normal tw-ml-2">View all →</RouterLink>
         </h3>
         <div v-if="issuesLoading" class="ui active centered inline loader"/>
         <div v-else-if="issues.length === 0" class="tw-text-gray-500 tw-text-sm">No open issues.</div>
@@ -116,7 +116,7 @@
 
 <script setup lang="ts">
 import {ref, onMounted} from 'vue';
-import {useRoute} from 'vue-router';
+import {RouterLink, useRoute} from 'vue-router';
 import AppLayout from '../layouts/AppLayout.vue';
 import {getRepo, getRepoContents, getRepoIssues, type Repository, type Issue, type ContentsResponse} from '../api/index.ts';
 

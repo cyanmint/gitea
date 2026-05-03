@@ -83,6 +83,23 @@ export type Branch = {
   protected: boolean;
 };
 
+export type Comment = {
+  id: number;
+  html_url: string;
+  body: string;
+  user: User;
+  created_at: string;
+  updated_at: string;
+};
+
+export type PullRequest = Issue & {
+  merged: boolean;
+  merged_at: string | null;
+  merge_commit_sha: string | null;
+  head: {label: string; ref: string; sha: string; repo: Repository | null};
+  base: {label: string; ref: string; sha: string; repo: Repository | null};
+};
+
 export type ContentsResponse = {
   type: 'file' | 'dir' | 'symlink' | 'submodule';
   name: string;
@@ -125,6 +142,28 @@ export async function getCurrentUser(): Promise<User | null> {
 }
 
 // ---- Users ----
+
+/** Get a user's public profile. */
+export async function getUser(username: string): Promise<User> {
+  const resp = await GET(`${apiBase}/users/${encodeURIComponent(username)}`);
+  if (!resp.ok) throw new Error(`User not found: ${resp.status}`);
+  return resp.json();
+}
+
+/** List repositories owned by a user. */
+export async function getUserRepos(username: string, opts: PaginationOpts = {}): Promise<Repository[]> {
+  const params = new URLSearchParams({page: String(opts.page ?? 1), limit: String(opts.limit ?? 20)});
+  const resp = await GET(`${apiBase}/users/${encodeURIComponent(username)}/repos?${params}`);
+  if (!resp.ok) throw new Error(`Failed to fetch user repos: ${resp.status}`);
+  return resp.json();
+}
+
+/** List organizations a user belongs to (public membership). */
+export async function getUserOrgs(username: string): Promise<User[]> {
+  const resp = await GET(`${apiBase}/users/${encodeURIComponent(username)}/orgs`);
+  if (!resp.ok) return [];
+  return resp.json();
+}
 
 export async function searchUsers(query: string, opts: PaginationOpts = {}): Promise<UserSearchResult> {
   const params = new URLSearchParams({q: query, page: String(opts.page ?? 1), limit: String(opts.limit ?? 20)});
@@ -185,4 +224,39 @@ export async function getRepoIssues(owner: string, repo: string, opts: Paginatio
   const resp = await GET(`${apiBase}/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/issues?${params}`);
   if (!resp.ok) throw new Error(`Failed to fetch issues: ${resp.status}`);
   return resp.json();
+}
+
+/** Get a single issue by its index number. */
+export async function getIssue(owner: string, repo: string, index: number): Promise<Issue> {
+  const resp = await GET(`${apiBase}/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/issues/${index}`);
+  if (!resp.ok) throw new Error(`Failed to fetch issue: ${resp.status}`);
+  return resp.json();
+}
+
+/** List comments on an issue. */
+export async function getIssueComments(owner: string, repo: string, index: number, opts: PaginationOpts = {}): Promise<Comment[]> {
+  const params = new URLSearchParams({page: String(opts.page ?? 1), limit: String(opts.limit ?? 50)});
+  const resp = await GET(`${apiBase}/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/issues/${index}/comments?${params}`);
+  if (!resp.ok) throw new Error(`Failed to fetch comments: ${resp.status}`);
+  return resp.json();
+}
+
+/** List pull requests for a repository. */
+export async function getPullRequests(owner: string, repo: string, opts: PaginationOpts & {state?: 'open' | 'closed'} = {}): Promise<PullRequest[]> {
+  const params = new URLSearchParams({
+    page: String(opts.page ?? 1),
+    limit: String(opts.limit ?? 20),
+    state: opts.state ?? 'open',
+    type: 'pulls',
+  });
+  const resp = await GET(`${apiBase}/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/pulls?${params}`);
+  if (!resp.ok) throw new Error(`Failed to fetch pull requests: ${resp.status}`);
+  return resp.json();
+}
+
+/** Get the total number of issues (or PRs) for a repository. */
+export async function getRepoIssueCount(owner: string, repo: string, state: 'open' | 'closed', type: 'issues' | 'pulls'): Promise<number> {
+  const params = new URLSearchParams({state, type, limit: '1', page: '1'});
+  const resp = await GET(`${apiBase}/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/issues?${params}`);
+  return parseInt(resp.headers.get('X-Total-Count') ?? '0', 10);
 }
