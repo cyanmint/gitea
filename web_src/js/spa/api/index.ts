@@ -260,3 +260,198 @@ export async function getRepoIssueCount(owner: string, repo: string, state: 'ope
   const resp = await GET(`${apiBase}/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/issues?${params}`);
   return parseInt(resp.headers.get('X-Total-Count') ?? '0', 10);
 }
+
+// ---- Extended types ----
+
+export type Release = {
+  id: number;
+  tag_name: string;
+  name: string;
+  body: string;
+  prerelease: boolean;
+  draft: boolean;
+  created_at: string;
+  published_at: string;
+  author: User;
+  html_url: string;
+  assets: Array<{id: number; name: string; size: number; download_count: number; browser_download_url: string}>;
+  zipball_url: string;
+  tarball_url: string;
+};
+
+export type Commit = {
+  sha: string;
+  created: string;
+  commit: {
+    message: string;
+    author: {name: string; email: string; date: string};
+    committer: {name: string; email: string; date: string};
+    url: string;
+  };
+  author: User | null;
+  committer: User | null;
+  html_url: string;
+};
+
+export type Tag = {
+  name: string;
+  message: string;
+  id: string;
+  commit: {sha: string; created: string; url: string};
+  zipball_url: string;
+  tarball_url: string;
+};
+
+export type Notification = {
+  id: number;
+  repository: Repository;
+  subject: {
+    title: string;
+    url: string;
+    latest_comment_url: string;
+    type: 'Issue' | 'Pull' | 'Commit' | 'Repository';
+    state: 'open' | 'closed' | 'merged' | '';
+  };
+  unread: boolean;
+  pinned: boolean;
+  updated_at: string;
+  url: string;
+};
+
+export type WikiPage = {
+  title: string;
+  content_base64: string;
+  last_commit: {id: string; message: string; author: {name: string; email: string; date: string}};
+  html_url: string;
+  subtitle: string;
+};
+
+export type Milestone = {
+  id: number;
+  title: string;
+  description: string;
+  state: 'open' | 'closed';
+  open_issues: number;
+  closed_issues: number;
+  created_at: string;
+  updated_at: string;
+  due_on: string | null;
+};
+
+// ---- Releases ----
+
+export async function getRepoReleases(owner: string, repo: string, opts: PaginationOpts = {}): Promise<Release[]> {
+  const params = new URLSearchParams({page: String(opts.page ?? 1), limit: String(opts.limit ?? 20)});
+  const resp = await GET(`${apiBase}/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/releases?${params}`);
+  if (!resp.ok) throw new Error(`Failed to fetch releases: ${resp.status}`);
+  return resp.json();
+}
+
+export async function getRepoRelease(owner: string, repo: string, id: number): Promise<Release> {
+  const resp = await GET(`${apiBase}/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/releases/${id}`);
+  if (!resp.ok) throw new Error(`Failed to fetch release: ${resp.status}`);
+  return resp.json();
+}
+
+export async function getRepoReleaseByTag(owner: string, repo: string, tag: string): Promise<Release> {
+  const resp = await GET(`${apiBase}/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/releases/tags/${encodeURIComponent(tag)}`);
+  if (!resp.ok) throw new Error(`Failed to fetch release by tag: ${resp.status}`);
+  return resp.json();
+}
+
+export async function getLatestRelease(owner: string, repo: string): Promise<Release> {
+  const resp = await GET(`${apiBase}/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/releases/latest`);
+  if (!resp.ok) throw new Error(`Failed to fetch latest release: ${resp.status}`);
+  return resp.json();
+}
+
+// ---- Commits ----
+
+export async function getRepoCommits(owner: string, repo: string, opts: PaginationOpts & {sha?: string; path?: string} = {}): Promise<Commit[]> {
+  const params = new URLSearchParams({page: String(opts.page ?? 1), limit: String(opts.limit ?? 20)});
+  if (opts.sha) params.set('sha', opts.sha);
+  if (opts.path) params.set('path', opts.path);
+  const resp = await GET(`${apiBase}/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/commits?${params}`);
+  if (!resp.ok) throw new Error(`Failed to fetch commits: ${resp.status}`);
+  return resp.json();
+}
+
+// ---- Tags ----
+
+export async function getRepoTags(owner: string, repo: string, opts: PaginationOpts = {}): Promise<Tag[]> {
+  const params = new URLSearchParams({page: String(opts.page ?? 1), limit: String(opts.limit ?? 20)});
+  const resp = await GET(`${apiBase}/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/tags?${params}`);
+  if (!resp.ok) throw new Error(`Failed to fetch tags: ${resp.status}`);
+  return resp.json();
+}
+
+// ---- Notifications ----
+
+export async function getNotifications(opts: {all?: boolean; page?: number; limit?: number} = {}): Promise<Notification[]> {
+  const params = new URLSearchParams({page: String(opts.page ?? 1), limit: String(opts.limit ?? 20)});
+  if (opts.all) params.set('all', 'true');
+  const resp = await GET(`${apiBase}/notifications?${params}`);
+  if (!resp.ok) throw new Error(`Failed to fetch notifications: ${resp.status}`);
+  return resp.json();
+}
+
+export async function markAllNotificationsRead(): Promise<void> {
+  const resp = await fetch(`${apiBase}/notifications`, {method: 'PUT', credentials: 'same-origin'});
+  if (!resp.ok) throw new Error(`Failed to mark all notifications read: ${resp.status}`);
+}
+
+export async function markNotificationRead(id: number): Promise<void> {
+  const resp = await fetch(`${apiBase}/notifications/threads/${id}`, {method: 'PATCH', credentials: 'same-origin'});
+  if (!resp.ok) throw new Error(`Failed to mark notification read: ${resp.status}`);
+}
+
+// ---- Wiki ----
+
+export async function getWikiPage(owner: string, repo: string, pageName: string): Promise<WikiPage> {
+  const resp = await GET(`${apiBase}/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/wiki/page/${encodeURIComponent(pageName)}`);
+  if (!resp.ok) throw new Error(`Failed to fetch wiki page: ${resp.status}`);
+  return resp.json();
+}
+
+export async function listWikiPages(owner: string, repo: string, opts: PaginationOpts = {}): Promise<WikiPage[]> {
+  const params = new URLSearchParams({page: String(opts.page ?? 1), limit: String(opts.limit ?? 20)});
+  const resp = await GET(`${apiBase}/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/wiki/pages?${params}`);
+  if (!resp.ok) throw new Error(`Failed to list wiki pages: ${resp.status}`);
+  return resp.json();
+}
+
+// ---- User issues/pulls ----
+
+export async function getUserIssues(opts: PaginationOpts & {state?: 'open' | 'closed'; type?: 'issues' | 'comment'; assigned?: boolean} = {}): Promise<Issue[]> {
+  const params = new URLSearchParams({page: String(opts.page ?? 1), limit: String(opts.limit ?? 20)});
+  if (opts.state) params.set('state', opts.state);
+  if (opts.type) params.set('type', opts.type);
+  if (opts.assigned) params.set('assigned', 'true');
+  const resp = await GET(`${apiBase}/repos/issues/search?${params}`);
+  if (!resp.ok) throw new Error(`Failed to fetch user issues: ${resp.status}`);
+  return resp.json();
+}
+
+// ---- Repo milestones ----
+
+export async function getRepoMilestones(owner: string, repo: string, opts: PaginationOpts & {state?: 'open' | 'closed'} = {}): Promise<Milestone[]> {
+  const params = new URLSearchParams({page: String(opts.page ?? 1), limit: String(opts.limit ?? 20)});
+  if (opts.state) params.set('state', opts.state);
+  const resp = await GET(`${apiBase}/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/milestones?${params}`);
+  if (!resp.ok) throw new Error(`Failed to fetch milestones: ${resp.status}`);
+  return resp.json();
+}
+
+export async function getRepoMilestone(owner: string, repo: string, id: number): Promise<Milestone> {
+  const resp = await GET(`${apiBase}/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/milestones/${id}`);
+  if (!resp.ok) throw new Error(`Failed to fetch milestone: ${resp.status}`);
+  return resp.json();
+}
+
+// ---- Repo labels ----
+
+export async function getRepoLabels(owner: string, repo: string): Promise<Label[]> {
+  const resp = await GET(`${apiBase}/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/labels`);
+  if (!resp.ok) throw new Error(`Failed to fetch labels: ${resp.status}`);
+  return resp.json();
+}
