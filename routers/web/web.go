@@ -437,7 +437,7 @@ func registerWebRoutes(m *web.Router, webAuth *AuthMiddleware) {
 	}
 
 	addWebhookAddRoutes := func() {
-		m.Get("/{type}/new", repo_setting.WebhooksNew)
+		m.Get("/{type}/new", SPA)
 		m.Post("/gitea/new", web.Bind(forms.NewWebhookForm{}), repo_setting.GiteaHooksNewPost)
 		m.Post("/gogs/new", web.Bind(forms.NewGogshookForm{}), repo_setting.GogsHooksNewPost)
 		m.Post("/slack/new", web.Bind(forms.NewSlackHookForm{}), repo_setting.SlackHooksNewPost)
@@ -485,8 +485,8 @@ func registerWebRoutes(m *web.Router, webAuth *AuthMiddleware) {
 	addSettingsRunnersRoutes := func() {
 		m.Group("/runners", func() {
 			m.Get("", SPA)
-			m.Combo("/{runnerid}").Get(shared_actions.RunnersEdit).
-				Post(web.Bind(forms.EditRunnerForm{}), shared_actions.RunnersEditPost)
+			m.Get("/{runnerid}", SPA)
+			m.Post("/{runnerid}", web.Bind(forms.EditRunnerForm{}), shared_actions.RunnersEditPost)
 			m.Post("/{runnerid}/update-runner", shared_actions.RunnerUpdatePost)
 			m.Post("/{runnerid}/delete", shared_actions.RunnerDeletePost)
 			m.Post("/reset_registration_token", shared_actions.ResetRunnerRegistrationToken)
@@ -671,13 +671,13 @@ func registerWebRoutes(m *web.Router, webAuth *AuthMiddleware) {
 			m.Get("", SPA)
 			m.Group("/rules", func() {
 				m.Group("/add", func() {
-					m.Get("", user_setting.PackagesRuleAdd)
+					m.Get("", SPA)
 					m.Post("", web.Bind(forms.PackageCleanupRuleForm{}), user_setting.PackagesRuleAddPost)
 				})
 				m.Group("/{id}", func() {
-					m.Get("", user_setting.PackagesRuleEdit)
+					m.Get("", SPA)
 					m.Post("", web.Bind(forms.PackageCleanupRuleForm{}), user_setting.PackagesRuleEditPost)
-					m.Get("/preview", user_setting.PackagesRulePreview)
+					m.Get("/preview", SPA)
 				})
 			})
 			m.Group("/cargo", func() {
@@ -720,13 +720,13 @@ func registerWebRoutes(m *web.Router, webAuth *AuthMiddleware) {
 	}, reqSignIn, user_setting.SettingsCtxData)
 
 	m.Group("/user", func() {
-		m.Get("/activate", auth.Activate)
+		m.Get("/activate", SPA)
 		m.Post("/activate", auth.ActivatePost)
 		m.Any("/activate_email", auth.ActivateEmail)
 		m.Get("/avatar/{username}/{size}", user.AvatarByUsernameSize)
-		m.Get("/recover_account", auth.ResetPasswd)
+		m.Get("/recover_account", SPA)
 		m.Post("/recover_account", auth.ResetPasswdPost)
-		m.Get("/forgot_password", auth.ForgotPasswd)
+		m.Get("/forgot_password", SPA)
 		m.Post("/forgot_password", auth.ForgotPasswdPost)
 		m.Get("/logout", auth.SignOut)
 		m.Get("/stopwatches", reqSignIn, user.GetStopwatches)
@@ -926,19 +926,19 @@ func registerWebRoutes(m *web.Router, webAuth *AuthMiddleware) {
 
 	m.Group("/org", func() {
 		m.Group("/{org}", func() {
-			m.Get("/members", org.Members)
+			m.Get("/members", SPA)
 		}, context.OrgAssignment(context.OrgAssignmentOptions{}))
 	}, optSignIn)
 	// end "/org": members
 
 	m.Group("/org", func() {
 		m.Group("", func() {
-			m.Get("/create", org.Create)
+			m.Get("/create", SPA)
 			m.Post("/create", web.Bind(forms.CreateOrgForm{}), org.CreatePost)
 		})
 
 		m.Group("/invite/{token}", func() {
-			m.Get("", org.TeamInvite)
+			m.Get("", SPA)
 			m.Post("", org.TeamInvitePost)
 		})
 
@@ -986,17 +986,18 @@ func registerWebRoutes(m *web.Router, webAuth *AuthMiddleware) {
 				m.Post("/avatar", web.Bind(forms.AvatarForm{}), org.SettingsAvatar)
 				m.Post("/avatar/delete", org.SettingsDeleteAvatar)
 				m.Group("/applications", func() {
-					m.Get("", org.Applications)
+					m.Get("", SPA)
 					m.Post("/oauth2", web.Bind(forms.EditOAuth2ApplicationForm{}), org.OAuthApplicationsPost)
 					m.Group("/oauth2/{id}", func() {
-						m.Combo("").Get(org.OAuth2ApplicationShow).Post(web.Bind(forms.EditOAuth2ApplicationForm{}), org.OAuth2ApplicationEdit)
+						m.Get("", SPA)
+						m.Post("", web.Bind(forms.EditOAuth2ApplicationForm{}), org.OAuth2ApplicationEdit)
 						m.Post("/regenerate_secret", org.OAuthApplicationsRegenerateSecret)
 						m.Post("/delete", org.DeleteOAuth2Application)
 					})
 				}, oauth2Enabled)
 
 				m.Group("/hooks", func() {
-					m.Get("", org.Webhooks)
+					m.Get("", SPA)
 					m.Post("/delete", org.DeleteWebhook)
 					addWebhookAddRoutes()
 					m.Group("/{id}", func() {
@@ -1007,7 +1008,7 @@ func registerWebRoutes(m *web.Router, webAuth *AuthMiddleware) {
 				}, webhooksEnabled)
 
 				m.Group("/labels", func() {
-					m.Get("", org.RetrieveLabels, org.Labels)
+					m.Get("", SPA)
 					m.Post("/new", web.Bind(forms.CreateLabelForm{}), org.NewLabel)
 					m.Post("/edit", web.Bind(forms.CreateLabelForm{}), org.UpdateLabel)
 					m.Post("/delete", org.DeleteLabel)
@@ -1030,16 +1031,16 @@ func registerWebRoutes(m *web.Router, webAuth *AuthMiddleware) {
 				m.Post("/visibility", org.SettingsChangeVisibilityPost)
 
 				m.Group("/packages", func() {
-					m.Get("", org.Packages)
+					m.Get("", SPA)
 					m.Group("/rules", func() {
 						m.Group("/add", func() {
-							m.Get("", org.PackagesRuleAdd)
+							m.Get("", SPA)
 							m.Post("", web.Bind(forms.PackageCleanupRuleForm{}), org.PackagesRuleAddPost)
 						})
 						m.Group("/{id}", func() {
-							m.Get("", org.PackagesRuleEdit)
+							m.Get("", SPA)
 							m.Post("", web.Bind(forms.PackageCleanupRuleForm{}), org.PackagesRuleEditPost)
-							m.Get("/preview", org.PackagesRulePreview)
+							m.Get("/preview", SPA)
 						})
 					})
 					m.Group("/cargo", func() {
@@ -1049,7 +1050,7 @@ func registerWebRoutes(m *web.Router, webAuth *AuthMiddleware) {
 				}, packagesEnabled)
 
 				m.Group("/blocked_users", func() {
-					m.Get("", org.BlockedUsers)
+				m.Get("", SPA)
 					m.Post("", web.Bind(forms.BlockUserForm{}), org.BlockedUsersPost)
 				})
 			}, ctxDataSet("EnableOAuth2", setting.OAuth2.Enabled, "EnablePackages", setting.Packages.Enabled, "PageIsOrgSettings", true))
@@ -1058,9 +1059,9 @@ func registerWebRoutes(m *web.Router, webAuth *AuthMiddleware) {
 	// end "/org": most org routes
 
 	m.Group("/repo", func() {
-		m.Get("/create", repo.Create)
+		m.Get("/create", SPA)
 		m.Post("/create", web.Bind(forms.CreateRepoForm{}), repo.CreatePost)
-		m.Get("/migrate", repo.Migrate)
+		m.Get("/migrate", SPA)
 		m.Post("/migrate", web.Bind(forms.MigrateRepoForm{}), repo.MigratePost)
 		m.Get("/search", repo.SearchRepo)
 	}, reqSignIn)
@@ -1069,14 +1070,14 @@ func registerWebRoutes(m *web.Router, webAuth *AuthMiddleware) {
 	m.Group("/{username}/-", func() {
 		if setting.Packages.Enabled {
 			m.Group("/packages", func() {
-				m.Get("", user.ListPackages)
+				m.Get("", SPA)
 				m.Group("/{type}/{name}", func() {
 					m.Get("", user.RedirectToLastVersion)
-					m.Get("/versions", user.ListPackageVersions)
+					m.Get("/versions", SPA)
 					m.Group("/{version}", func() {
-						m.Get("", user.ViewPackageVersion)
+						m.Get("", SPA)
 						m.Post("", reqPackageAccess(perm.AccessModeWrite), user.PackageVersionDelete)
-						m.Get("/{version_sub}", user.ViewPackageVersion)
+						m.Get("/{version_sub}", SPA)
 						m.Group("/terraform", func() {
 							m.Post("/lock", user.ActionPackageTerraformLock)
 							m.Post("/unlock", user.ActionPackageTerraformUnlock)
@@ -1085,7 +1086,7 @@ func registerWebRoutes(m *web.Router, webAuth *AuthMiddleware) {
 					})
 				})
 				m.Group("/settings/{type}/{name}", func() {
-					m.Get("", user.PackageSettings)
+					m.Get("", SPA)
 					m.Post("", web.Bind(forms.PackageSettingForm{}), user.PackageSettingsPost)
 				}, reqPackageAccess(perm.AccessModeWrite))
 			}, context.PackageAssignment(), reqPackageAccess(perm.AccessModeRead))
@@ -1099,16 +1100,16 @@ func registerWebRoutes(m *web.Router, webAuth *AuthMiddleware) {
 
 		m.Group("/projects", func() {
 			m.Group("", func() {
-				m.Get("", org.Projects)
-				m.Get("/{id}", org.ViewProject)
+				m.Get("", SPA)
+				m.Get("/{id}", SPA)
 			}, reqUnitAccess(unit.TypeProjects, perm.AccessModeRead, true))
 			m.Group("", func() { //nolint:dupl // duplicates lines 1421-1441
-				m.Get("/new", org.RenderNewProject)
+				m.Get("/new", SPA)
 				m.Post("/new", web.Bind(forms.CreateProjectForm{}), org.NewProjectPost)
 				m.Group("/{id}", func() {
 					m.Post("/delete", org.DeleteProject)
 
-					m.Get("/edit", org.RenderEditProject)
+					m.Get("/edit", SPA)
 					m.Post("/edit", web.Bind(forms.CreateProjectForm{}), org.EditProjectPost)
 					m.Post("/{action:open|close}", org.ChangeProjectStatus)
 
@@ -1315,9 +1316,9 @@ func registerWebRoutes(m *web.Router, webAuth *AuthMiddleware) {
 	m.Group("/{username}/{reponame}", func() { // edit issues, pulls, labels, milestones, etc
 		m.Group("/issues", func() {
 			m.Group("/new", func() {
-				m.Combo("").Get(repo.NewIssue).
-					Post(web.Bind(forms.CreateIssueForm{}), repo.NewIssuePost)
-				m.Get("/choose", repo.NewIssueChooseTemplate)
+				m.Get("", SPA)
+				m.Post("", web.Bind(forms.CreateIssueForm{}), repo.NewIssuePost)
+				m.Get("/choose", SPA)
 			})
 			m.Get("/search", repo.SearchRepoIssuesJSON)
 		}, reqUnitIssuesReader)
@@ -1414,22 +1415,22 @@ func registerWebRoutes(m *web.Router, webAuth *AuthMiddleware) {
 
 				// the path params are used in PrepareCommitFormOptions to construct the correct form action URL
 				m.Combo("/{editor_action:_edit}/*").
-					Get(repo.EditFile).
+					Get(SPA).
 					Post(web.Bind(forms.EditRepoFileForm{}), canWriteToBranch, repo.EditFilePost)
 				m.Combo("/{editor_action:_new}/*").
-					Get(repo.EditFile).
+					Get(SPA).
 					Post(web.Bind(forms.EditRepoFileForm{}), canWriteToBranch, repo.EditFilePost)
 				m.Combo("/{editor_action:_delete}/*").
-					Get(repo.DeleteFile).
+					Get(SPA).
 					Post(web.Bind(forms.DeleteRepoFileForm{}), canWriteToBranch, repo.DeleteFilePost)
 				m.Combo("/{editor_action:_upload}/*", repo.MustBeAbleToUpload).
-					Get(repo.UploadFile).
+					Get(SPA).
 					Post(web.Bind(forms.UploadRepoFileForm{}), canWriteToBranch, repo.UploadFilePost)
 				m.Combo("/{editor_action:_diffpatch}/*").
-					Get(repo.NewDiffPatch).
+					Get(SPA).
 					Post(web.Bind(forms.EditRepoFileForm{}), canWriteToBranch, repo.NewDiffPatchPost)
 				m.Combo("/{editor_action:_cherrypick}/{sha:([a-f0-9]{7,64})}/*").
-					Get(repo.CherryPick).
+					Get(SPA).
 					Post(web.Bind(forms.CherryPickForm{}), canWriteToBranch, repo.CherryPickPost)
 			}, context.RepoRefByType(git.RefTypeBranch), repo.WebGitOperationCommonData)
 			m.Group("", func() {
@@ -1450,7 +1451,8 @@ func registerWebRoutes(m *web.Router, webAuth *AuthMiddleware) {
 			m.Post("/merge-upstream", repo.MergeUpstream)
 		}, context.RepoMustNotBeArchived(), reqRepoCodeWriter, repo.MustBeNotEmpty)
 
-		m.Combo("/fork").Get(repo.Fork).Post(web.Bind(forms.CreateRepoForm{}), repo.ForkPost)
+		m.Get("/fork", SPA)
+		m.Post("/fork", web.Bind(forms.CreateRepoForm{}), repo.ForkPost)
 	}, reqSignIn, context.RepoAssignment, reqUnitCodeReader)
 	// end "/{username}/{reponame}": repo code
 
@@ -1509,12 +1511,12 @@ func registerWebRoutes(m *web.Router, webAuth *AuthMiddleware) {
 		m.Get("", SPA)
 		m.Get("/{id}", SPA)
 		m.Group("", func() { //nolint:dupl // duplicates lines 1034-1054
-			m.Get("/new", repo.RenderNewProject)
+			m.Get("/new", SPA)
 			m.Post("/new", web.Bind(forms.CreateProjectForm{}), repo.NewProjectPost)
 			m.Group("/{id}", func() {
 				m.Post("/delete", repo.DeleteProject)
 
-				m.Get("/edit", repo.RenderEditProject)
+				m.Get("/edit", SPA)
 				m.Post("/edit", web.Bind(forms.CreateProjectForm{}), repo.EditProjectPost)
 				m.Post("/{action:open|close}", repo.ChangeProjectStatus)
 
@@ -1544,18 +1546,16 @@ func registerWebRoutes(m *web.Router, webAuth *AuthMiddleware) {
 			m.Get("", SPA)
 			m.Post("", web.Bind(actions.ViewRequest{}), actions.ViewPost)
 			m.Group("/attempts/{attempt}", func() {
-				m.Combo("").
-					Get(actions.View).
-					Post(web.Bind(actions.ViewRequest{}), actions.ViewPost)
+				m.Get("", SPA)
+				m.Post("", web.Bind(actions.ViewRequest{}), actions.ViewPost)
 			})
 			m.Group("/jobs/{job}", func() {
-				m.Combo("").
-					Get(actions.View).
-					Post(web.Bind(actions.ViewRequest{}), actions.ViewPost)
+				m.Get("", SPA)
+				m.Post("", web.Bind(actions.ViewRequest{}), actions.ViewPost)
 				m.Post("/rerun", reqRepoActionsWriter, actions.Rerun)
 				m.Get("/logs", actions.Logs)
 			})
-			m.Get("/workflow", actions.ViewWorkflowFile)
+			m.Get("/workflow", SPA)
 			m.Post("/cancel", reqRepoActionsWriter, actions.Cancel)
 			m.Post("/approve", reqRepoActionsWriter, actions.Approve)
 			m.Post("/delete", reqRepoActionsWriter, actions.Delete)
@@ -1592,15 +1592,15 @@ func registerWebRoutes(m *web.Router, webAuth *AuthMiddleware) {
 
 		m.Group("", func() {
 			m.Group("/contributors", func() {
-				m.Get("", repo.Contributors)
+				m.Get("", SPA)
 				m.Get("/data", repo.ContributorsData)
 			})
 			m.Group("/code-frequency", func() {
-				m.Get("", repo.CodeFrequency)
+				m.Get("", SPA)
 				m.Get("/data", repo.CodeFrequencyData)
 			})
 			m.Group("/recent-commits", func() {
-				m.Get("", repo.RecentCommits)
+				m.Get("", SPA)
 				m.Get("/data", repo.CodeFrequencyData) // "recent-commits" also uses the same data as "code-frequency"
 			})
 		}, reqUnitCodeReader)
@@ -1616,11 +1616,11 @@ func registerWebRoutes(m *web.Router, webAuth *AuthMiddleware) {
 			m.Get("", SPA)
 			m.Get(".diff", repo.DownloadPullDiff)
 			m.Get(".patch", repo.DownloadPullPatch)
-			m.Get("/merge_box", repo.ViewPullMergeBox)
+			m.Get("/merge_box", SPA)
 			m.Group("/commits", func() {
-				m.Get("", repo.SetWhitespaceBehavior, repo.GetPullDiffStats, repo.ViewPullCommits)
+				m.Get("", SPA)
 				m.Get("/list", repo.GetPullCommits)
-				m.Get("/{sha:[a-f0-9]{7,64}}", repo.SetEditorconfigIfExists, repo.SetDiffViewStyle, repo.SetWhitespaceBehavior, repo.SetShowOutdatedComments, repo.ViewPullFilesForSingleCommit)
+				m.Get("/{sha:[a-f0-9]{7,64}}", SPA)
 			})
 			m.Post("/merge", context.RepoMustNotBeArchived(), web.Bind(forms.MergePullRequestForm{}), repo.MergePullRequest)
 			m.Post("/cancel_auto_merge", context.RepoMustNotBeArchived(), repo.CancelAutoMergePullRequest)
@@ -1628,10 +1628,10 @@ func registerWebRoutes(m *web.Router, webAuth *AuthMiddleware) {
 			m.Post("/set_allow_maintainer_edit", web.Bind(forms.UpdateAllowEditsForm{}), repo.SetAllowEdits)
 			m.Post("/cleanup", context.RepoMustNotBeArchived(), repo.CleanUpPullRequest)
 			m.Group("/files", func() {
-				m.Get("", repo.SetEditorconfigIfExists, repo.SetDiffViewStyle, repo.SetWhitespaceBehavior, repo.SetShowOutdatedComments, repo.ViewPullFilesForAllCommitsOfPr)
-				m.Get("/{shaFrom:[a-f0-9]{7,64}}..{shaTo:[a-f0-9]{7,64}}", repo.SetEditorconfigIfExists, repo.SetDiffViewStyle, repo.SetWhitespaceBehavior, repo.SetShowOutdatedComments, repo.ViewPullFilesForRange)
+				m.Get("", SPA)
+				m.Get("/{shaFrom:[a-f0-9]{7,64}}..{shaTo:[a-f0-9]{7,64}}", SPA)
 				m.Group("/reviews", func() {
-					m.Get("/new_comment", repo.RenderNewCodeCommentForm)
+					m.Get("/new_comment", SPA)
 					m.Post("/comments", web.Bind(forms.CodeCommentForm{}), repo.SetShowOutdatedComments, repo.CreateCodeComment)
 					m.Post("/submit", web.Bind(forms.SubmitReviewForm{}), repo.SubmitReview)
 				}, context.RepoMustNotBeArchived())
@@ -1683,7 +1683,7 @@ func registerWebRoutes(m *web.Router, webAuth *AuthMiddleware) {
 			m.Get("/branch/*", SPA)
 			m.Get("/tag/*", SPA)
 			m.Get("/commit/*", SPA)
-			m.Get("/*", context.RepoRefByType(""), repo.RefCommits) // "/*" route is deprecated, and kept for backward compatibility
+			m.Get("/*", SPA) // "/*" route is deprecated, and kept for backward compatibility
 		}, repo.MustBeNotEmpty)
 
 		m.Group("/blame", func() {
@@ -1711,7 +1711,7 @@ func registerWebRoutes(m *web.Router, webAuth *AuthMiddleware) {
 			m.Get("/branch/*", SPA)
 			m.Get("/tag/*", SPA)
 			m.Get("/commit/*", SPA)
-			m.Get("/*", context.RepoRefByType(""), repo.Home) // "/*" route is deprecated, and kept for backward compatibility
+			m.Get("/*", SPA) // "/*" route is deprecated, and kept for backward compatibility
 		}, repo.SetEditorconfigIfExists)
 		m.Get("/tree/*", repo.RedirectRepoTreeToSrc)    // redirect "/owner/repo/tree/*" requests to "/owner/repo/src/*"
 		m.Get("/blob/*", repo.RedirectRepoBlobToCommit) // redirect "/owner/repo/blob/*" requests to "/owner/repo/src/commit/*"
