@@ -29,6 +29,12 @@ export default defineConfig({
   // './' keeps all asset URLs relative to the HTML file, so the bundle works
   // at any URL prefix (/, /gitea/, /my/sub/path/, …) at runtime.
   base: './',
+  // Copy static assets (img/, fonts/) from the Go binary's public/assets
+  // directory into the output.  This makes the site logo and other images
+  // available without any server-side injection.  The files land at
+  // frontend-dist/img/logo.svg etc., matching the `./img/logo.svg` URLs
+  // produced by assetUrlPrefix='.' in spaconfig.ts.
+  publicDir: join(import.meta.dirname, 'public/assets'),
   plugins: [
     vuePlugin({
       template: {

@@ -42,11 +42,13 @@ export const apiBase: string = `${appSubUrl}/api/v1`;
 /**
  * URL prefix for bundled static assets (logo, etc.).
  * In embedded mode this comes from window.config; in standalone mode
- * assets are bundled into the frontend itself so the prefix is empty
- * (relative URLs work).
+ * assets are bundled into the frontend itself so the prefix is '.' — a
+ * relative path that resolves correctly at any URL sub-path (e.g.
+ * https://example.com/gitea/).  Absolute '/img/...' would break on
+ * GitHub Pages because the site is not served from the root.
  */
 export const assetUrlPrefix: string = buildApiUrl ?
-  '' :
+  '.' :
   cfg.assetUrlPrefix;
 
 /**
