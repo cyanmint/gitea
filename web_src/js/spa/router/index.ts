@@ -2,6 +2,7 @@ import {createRouter, type RouteRecordRaw} from 'vue-router';
 import {createQueryHistory} from './queryHistory.ts';
 
 // Pages
+import InstallPage from '../pages/InstallPage.vue';
 import HomePage from '../pages/HomePage.vue';
 import ExplorePage from '../pages/ExplorePage.vue';
 import LoginPage from '../pages/LoginPage.vue';
@@ -37,6 +38,11 @@ import NotFoundPage from '../pages/NotFoundPage.vue';
 // ---------------------------------------------------------------------------
 
 const routes: RouteRecordRaw[] = [
+
+  // ── Installation wizard ───────────────────────────────────────────────────
+  // Shown when the Gitea backend has not yet been configured.  Also reachable
+  // directly via /?install.
+  {path: '/install', component: InstallPage, meta: {title: 'Install Gitea', public: true}},
 
   // ── Dashboard / home ──────────────────────────────────────────────────────
   {path: '/', component: HomePage, meta: {title: 'Dashboard'}},
@@ -172,4 +178,29 @@ const appName = titleParts.at(-1) ?? titleParts[0] ?? 'Gitea';
 router.afterEach((to) => {
   const title = to.meta.title as string | undefined;
   if (title) document.title = `${title} - ${appName}`;
+});
+
+// ---------------------------------------------------------------------------
+// Auto-detect uninstalled state.
+//
+// When the Gitea backend returns HTTP 503 (Service Unavailable) it means the
+// instance has not been set up yet.  On the first navigation to any page that
+// is not already the install wizard, probe the API and redirect if needed.
+// ---------------------------------------------------------------------------
+import {apiBase} from '../spaconfig.ts';
+
+let installCheckDone = false;
+
+router.beforeEach(async (to) => {
+  if (installCheckDone || to.path === '/install') return true;
+  installCheckDone = true; // only probe once per SPA session
+  try {
+    const resp = await fetch(`${apiBase}/settings/api`, {method: 'GET'});
+    if (resp.status === 503) {
+      return {path: '/install', replace: true};
+    }
+  } catch {
+    // Network error — cannot reach backend; let navigation proceed normally.
+  }
+  return true;
 });
