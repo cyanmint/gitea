@@ -7,7 +7,7 @@
           {{ owner }}/{{ repoName }}
         </RouterLink>
         <span>/</span>
-        <span>{{ refType }}:{{ ref }}</span>
+        <span>{{ refType }}:{{ branchRef }}</span>
         <template v-if="filePath">
           <span v-for="(part, i) in pathParts" :key="i">/{{ part }}</span>
         </template>
@@ -73,7 +73,7 @@ const route = useRoute();
 const owner = computed(() => route.params.owner as string);
 const repoName = computed(() => route.params.repo as string);
 const refType = computed(() => route.params.refType as string);
-const ref = computed(() => route.params.ref as string);
+const branchRef = computed(() => route.params.ref as string);
 const filePath = computed(() => {
   const pm = route.params.pathMatch;
   return Array.isArray(pm) ? pm.join('/') : (pm ?? '');
@@ -104,17 +104,17 @@ const fileContent = computed(() => {
 });
 
 function buildEntryPath(entry: ContentsResponse): string {
-  const base = `/${owner.value}/${repoName.value}/src/${refType.value}/${ref.value}`;
+  const base = `/${owner.value}/${repoName.value}/src/${refType.value}/${branchRef.value}`;
   return entry.path ? `${base}/${entry.path}` : base;
 }
 
 async function load() {
-  if (!owner.value || !repoName.value || !ref.value) return;
+  if (!owner.value || !repoName.value || !branchRef.value) return;
   loading.value = true;
   error.value = null;
   contents.value = null;
   try {
-    contents.value = await getRepoContents(owner.value, repoName.value, filePath.value, ref.value);
+    contents.value = await getRepoContents(owner.value, repoName.value, filePath.value, branchRef.value);
   } catch (e) {
     error.value = String(e);
   } finally {
@@ -122,6 +122,6 @@ async function load() {
   }
 }
 
-watch([owner, repoName, ref, filePath], load);
+watch([owner, repoName, branchRef, filePath], load);
 onMounted(load);
 </script>

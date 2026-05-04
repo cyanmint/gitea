@@ -1,4 +1,4 @@
-import {GET} from '../../modules/fetch.ts';
+import {GET, POST, PATCH, PUT, DELETE} from '../../modules/fetch.ts';
 
 const {appSubUrl} = window.config;
 
@@ -396,12 +396,12 @@ export async function getNotifications(opts: {all?: boolean; page?: number; limi
 }
 
 export async function markAllNotificationsRead(): Promise<void> {
-  const resp = await fetch(`${apiBase}/notifications`, {method: 'PUT', credentials: 'same-origin'});
+  const resp = await PUT(`${apiBase}/notifications`);
   if (!resp.ok) throw new Error(`Failed to mark all notifications read: ${resp.status}`);
 }
 
 export async function markNotificationRead(id: number): Promise<void> {
-  const resp = await fetch(`${apiBase}/notifications/threads/${id}`, {method: 'PATCH', credentials: 'same-origin'});
+  const resp = await PATCH(`${apiBase}/notifications/threads/${id}`);
   if (!resp.ok) throw new Error(`Failed to mark notification read: ${resp.status}`);
 }
 
@@ -453,5 +453,66 @@ export async function getRepoMilestone(owner: string, repo: string, id: number):
 export async function getRepoLabels(owner: string, repo: string): Promise<Label[]> {
   const resp = await GET(`${apiBase}/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/labels`);
   if (!resp.ok) throw new Error(`Failed to fetch labels: ${resp.status}`);
+  return resp.json();
+}
+
+// ---- Issue mutations ----
+
+export type CreateIssueOpts = {
+  title: string;
+  body?: string;
+  assignees?: string[];
+  labels?: number[];
+  milestone?: number;
+};
+
+/** Create a new issue in a repository. */
+export async function createIssue(owner: string, repo: string, data: CreateIssueOpts): Promise<Issue> {
+  const resp = await POST(`${apiBase}/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/issues`, {data});
+  if (!resp.ok) throw new Error(`Failed to create issue: ${resp.status}`);
+  return resp.json();
+}
+
+/** Post a new comment on an issue or pull request. */
+export async function createIssueComment(owner: string, repo: string, index: number, body: string): Promise<Comment> {
+  const resp = await POST(`${apiBase}/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/issues/${index}/comments`, {data: {body}});
+  if (!resp.ok) throw new Error(`Failed to post comment: ${resp.status}`);
+  return resp.json();
+}
+
+// ---- Starring ----
+
+/** Check whether the currently authenticated user has starred a repository. */
+export async function isRepoStarred(owner: string, repo: string): Promise<boolean> {
+  const resp = await GET(`${apiBase}/user/starred/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}`);
+  return resp.status === 204;
+}
+
+/** Star a repository as the currently authenticated user. */
+export async function starRepo(owner: string, repo: string): Promise<void> {
+  const resp = await PUT(`${apiBase}/user/starred/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}`);
+  if (!resp.ok) throw new Error(`Failed to star repo: ${resp.status}`);
+}
+
+/** Unstar a repository as the currently authenticated user. */
+export async function unstarRepo(owner: string, repo: string): Promise<void> {
+  const resp = await DELETE(`${apiBase}/user/starred/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}`);
+  if (!resp.ok) throw new Error(`Failed to unstar repo: ${resp.status}`);
+}
+
+// ---- Repo creation ----
+
+export type CreateRepoOpts = {
+  name: string;
+  description?: string;
+  private?: boolean;
+  auto_init?: boolean;
+  default_branch?: string;
+};
+
+/** Create a new repository for the authenticated user. */
+export async function createRepo(data: CreateRepoOpts): Promise<Repository> {
+  const resp = await POST(`${apiBase}/user/repos`, {data});
+  if (!resp.ok) throw new Error(`Failed to create repo: ${resp.status}`);
   return resp.json();
 }

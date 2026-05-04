@@ -7,7 +7,7 @@
         </RouterLink>
         <span class="tw-text-gray-400">/</span>
         <span class="tw-font-semibold">Commits</span>
-        <span class="tw-text-gray-500 tw-text-sm">· {{ refType }}:{{ ref }}</span>
+        <span class="tw-text-gray-500 tw-text-sm">· {{ refType }}:{{ branchRef }}</span>
       </div>
 
       <div v-if="loading" class="tw-py-16 tw-text-center">
@@ -58,7 +58,7 @@ const route = useRoute();
 const owner = computed(() => route.params.owner as string);
 const repoName = computed(() => route.params.repo as string);
 const refType = computed(() => route.params.refType as string);
-const ref = computed(() => route.params.ref as string);
+const branchRef = computed(() => route.params.ref as string);
 
 const commits = ref<Commit[]>([]);
 const loading = ref(false);
@@ -75,11 +75,11 @@ function formatDate(dateStr: string): string {
 }
 
 async function load() {
-  if (!owner.value || !repoName.value || !ref.value) return;
+  if (!owner.value || !repoName.value || !branchRef.value) return;
   loading.value = true;
   error.value = null;
   try {
-    commits.value = await getRepoCommits(owner.value, repoName.value, {sha: ref.value, page: page.value, limit: pageSize});
+    commits.value = await getRepoCommits(owner.value, repoName.value, {sha: branchRef.value, page: page.value, limit: pageSize});
   } catch (e) {
     error.value = String(e);
   } finally {
@@ -87,6 +87,6 @@ async function load() {
   }
 }
 
-watch([owner, repoName, ref, page], load);
+watch([owner, repoName, branchRef, page], load);
 onMounted(load);
 </script>

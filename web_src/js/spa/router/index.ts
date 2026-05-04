@@ -10,6 +10,7 @@ import NotificationsPage from '../pages/NotificationsPage.vue';
 import RepoOverviewPage from '../pages/RepoOverviewPage.vue';
 import IssueListPage from '../pages/IssueListPage.vue';
 import IssueDetailPage from '../pages/IssueDetailPage.vue';
+import NewIssuePage from '../pages/NewIssuePage.vue';
 import PullRequestListPage from '../pages/PullRequestListPage.vue';
 import RepoSourcePage from '../pages/RepoSourcePage.vue';
 import RepoCommitsPage from '../pages/RepoCommitsPage.vue';
@@ -53,6 +54,7 @@ const routes: RouteRecordRaw[] = [
   // Repository routes — must come before /:username
   {path: '/:owner/:repo', component: RepoOverviewPage, meta: {title: 'Repository'}},
   {path: '/:owner/:repo/issues', component: IssueListPage, meta: {title: 'Issues'}},
+  {path: '/:owner/:repo/issues/new', component: NewIssuePage, meta: {title: 'New Issue'}},
   {path: '/:owner/:repo/issues/:id', component: IssueDetailPage, meta: {title: 'Issue'}},
   {path: '/:owner/:repo/pulls', component: PullRequestListPage, meta: {title: 'Pull Requests'}},
   {path: '/:owner/:repo/pulls/:index', component: IssueDetailPage, meta: {title: 'Pull Request'}},

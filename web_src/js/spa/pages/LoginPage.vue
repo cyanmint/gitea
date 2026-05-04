@@ -11,9 +11,7 @@
           <p>{{ error }}</p>
         </div>
 
-        <!-- Use the existing server-side login form for session-based auth.
-             A POST to /user/login creates a session cookie that the API also accepts. -->
-        <form class="ui large form" :action="`${appSubUrl}/user/login`" method="POST">
+        <form class="ui large form" @submit.prevent="handleLogin">
           <div class="ui stacked segment">
             <div class="field">
               <div class="ui left icon input">
@@ -43,7 +41,7 @@
             </div>
             <div class="field">
               <div class="ui checkbox">
-                <input type="checkbox" name="remember" id="remember">
+                <input v-model="remember" type="checkbox" name="remember" id="remember">
                 <label for="remember">Remember me</label>
               </div>
             </div>
@@ -56,7 +54,7 @@
 
         <div class="ui message tw-text-center">
           New to Gitea?
-          <a :href="`${appSubUrl}/user/sign_up`">Create an account</a>
+          <RouterLink to="/user/sign_up">Create an account</RouterLink>
         </div>
       </div>
     </div>
@@ -65,12 +63,43 @@
 
 <script setup lang="ts">
 import {ref} from 'vue';
+import {RouterLink} from 'vue-router';
 import AppLayout from '../layouts/AppLayout.vue';
+import {POST} from '../../modules/fetch.ts';
 
 const {appSubUrl, assetUrlPrefix} = window.config;
 
 const username = ref('');
 const password = ref('');
+const remember = ref(false);
 const loading = ref(false);
 const error = ref('');
+
+async function handleLogin() {
+  loading.value = true;
+  error.value = '';
+  try {
+    const body = new URLSearchParams({
+      user_name: username.value,
+      password: password.value,
+      ...(remember.value && {remember: 'on'}),
+    });
+    const resp = await POST(`${appSubUrl}/user/login`, {
+      headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+      data: body,
+    });
+    // The server redirects on success and returns HTML on failure.
+    // resp.redirected is true when the browser followed a redirect.
+    if (resp.redirected && !resp.url.includes('/user/login')) {
+      // Hard-navigate so the new session cookie is fully active.
+      window.location.href = resp.url;
+    } else {
+      error.value = 'Invalid username or password.';
+    }
+  } catch {
+    error.value = 'Network error. Please try again.';
+  } finally {
+    loading.value = false;
+  }
+}
 </script>

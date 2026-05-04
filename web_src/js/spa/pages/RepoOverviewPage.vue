@@ -20,6 +20,19 @@
         <span v-if="repo.private" class="ui mini label">Private</span>
         <span v-if="repo.archived" class="ui mini label tw-ml-1">Archived</span>
         <span v-if="repo.fork" class="ui mini label tw-ml-1">Fork</span>
+
+        <!-- Star button (only for signed-in users) -->
+        <div v-if="currentUser" class="tw-ml-auto">
+          <button
+            class="ui small basic button"
+            :class="{loading: starLoading}"
+            :disabled="starLoading"
+            @click="toggleStar"
+          >
+            {{ starred ? '⭐ Unstar' : '☆ Star' }}
+            <span class="ui label tw-ml-1">{{ repo.stars_count }}</span>
+          </button>
+        </div>
       </div>
 
       <p v-if="repo.description" class="tw-text-gray-600 tw-mb-4">{{ repo.description }}</p>
@@ -92,6 +105,7 @@
         <h3 class="tw-font-semibold tw-text-lg tw-mb-3">
           Recent Issues
           <RouterLink :to="`/${owner}/${repoName}/issues`" class="tw-text-blue-600 tw-text-sm tw-font-normal tw-ml-2">View all →</RouterLink>
+          <RouterLink v-if="currentUser" :to="`/${owner}/${repoName}/issues/new`" class="tw-text-blue-600 tw-text-sm tw-font-normal tw-ml-2">+ New issue</RouterLink>
         </h3>
         <div v-if="issuesLoading" class="ui active centered inline loader"/>
         <div v-else-if="issues.length === 0" class="tw-text-gray-500 tw-text-sm">No open issues.</div>
@@ -101,9 +115,9 @@
             :key="issue.id"
             class="tw-px-4 tw-py-3 tw-border-b last:tw-border-0 hover:tw-bg-gray-50"
           >
-            <a :href="issue.html_url" class="tw-font-medium tw-text-blue-600 hover:tw-underline">
+            <RouterLink :to="`/${owner}/${repoName}/issues/${issue.number}`" class="tw-font-medium tw-text-blue-600 hover:tw-underline">
               #{{ issue.number }} {{ issue.title }}
-            </a>
+            </RouterLink>
             <p class="tw-text-xs tw-text-gray-500 tw-mt-1">
               Opened by {{ issue.user.login }} · {{ issue.comments }} comments
             </p>
@@ -118,7 +132,11 @@
 import {ref, onMounted} from 'vue';
 import {RouterLink, useRoute} from 'vue-router';
 import AppLayout from '../layouts/AppLayout.vue';
-import {getRepo, getRepoContents, getRepoIssues, type Repository, type Issue, type ContentsResponse} from '../api/index.ts';
+import {
+  getRepo, getRepoContents, getRepoIssues, getCurrentUser,
+  isRepoStarred, starRepo, unstarRepo,
+  type Repository, type Issue, type ContentsResponse, type User,
+} from '../api/index.ts';
 
 const {appSubUrl} = window.config;
 
@@ -129,6 +147,7 @@ const repoName = String(route.params.repo);
 const loading = ref(true);
 const error = ref('');
 const repo = ref<Repository | null>(null);
+const currentUser = ref<User | null>(null);
 
 const contentsLoading = ref(false);
 const contentsError = ref('');
@@ -138,13 +157,38 @@ const contentsCount = ref(0);
 const issuesLoading = ref(false);
 const issues = ref<Issue[]>([]);
 
+const starred = ref(false);
+const starLoading = ref(false);
+
 /** Returns the browse URL for a repository content item (file or directory). */
 function contentItemUrl(item: ContentsResponse): string {
   const branch = repo.value?.default_branch ?? 'HEAD';
   return `${appSubUrl}/${owner}/${repoName}/src/branch/${branch}/${item.path}`;
 }
 
+async function toggleStar() {
+  if (!repo.value) return;
+  starLoading.value = true;
+  try {
+    if (starred.value) {
+      await unstarRepo(owner, repoName);
+      repo.value.stars_count = Math.max(0, repo.value.stars_count - 1);
+      starred.value = false;
+    } else {
+      await starRepo(owner, repoName);
+      repo.value.stars_count += 1;
+      starred.value = true;
+    }
+  } catch {
+    // silently ignore
+  } finally {
+    starLoading.value = false;
+  }
+}
+
 onMounted(async () => {
+  currentUser.value = await getCurrentUser();
+
   try {
     repo.value = await getRepo(owner, repoName);
   } catch (err) {
@@ -153,6 +197,11 @@ onMounted(async () => {
     return;
   }
   loading.value = false;
+
+  // Check star status for signed-in users
+  if (currentUser.value) {
+    isRepoStarred(owner, repoName).then(v => { starred.value = v; }).catch(() => {});
+  }
 
   // Load directory contents
   contentsLoading.value = true;

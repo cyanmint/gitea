@@ -80,7 +80,7 @@
 import {ref, computed, onMounted} from 'vue';
 import {useRoute, RouterLink} from 'vue-router';
 import AppLayout from '../layouts/AppLayout.vue';
-import {GET} from '../../../modules/fetch.ts';
+import {GET, PATCH} from '../../modules/fetch.ts';
 
 const route = useRoute();
 const {appSubUrl} = window.config;
@@ -152,12 +152,7 @@ async function loadProfile() {
 async function saveProfile() {
   saveSuccess.value = false;
   try {
-    const resp = await fetch(`${appSubUrl}/api/v1/user/settings`, {
-      method: 'PATCH',
-      credentials: 'same-origin',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify(profile.value),
-    });
+    const resp = await PATCH(`${appSubUrl}/api/v1/user/settings`, {data: profile.value});
     if (!resp.ok) throw new Error(`Save failed: ${resp.status}`);
     saveSuccess.value = true;
   } catch (e) {

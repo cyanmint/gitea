@@ -2,13 +2,36 @@ import {build, defineConfig} from 'vite';
 import vuePlugin from '@vitejs/plugin-vue';
 import {stringPlugin} from 'vite-string-plugin';
 import {licensePlugin, wrap} from 'rolldown-license-plugin';
-import {readFileSync, writeFileSync, mkdirSync, unlinkSync, globSync} from 'node:fs';
+import {readFileSync, writeFileSync, mkdirSync, unlinkSync, readdirSync} from 'node:fs';
 import path, {basename, join, parse} from 'node:path';
 import {env} from 'node:process';
 import tailwindcss from 'tailwindcss';
 import tailwindConfig from './tailwind.config.ts';
 import type {InlineConfig, Plugin, Rolldown} from 'vite';
 import {camelize} from 'vue';
+
+// Polyfill for globSync using readdirSync (Node 20 compatibility)
+function globSync(pattern: string, opts: {cwd: string}): string[] {
+  const {cwd} = opts;
+  // Support simple patterns like 'dir/*.ext' and 'dir/*.ext*' and '{a,b}/*.ext'
+  if (pattern.startsWith('{')) {
+    const match = pattern.match(/^\{([^}]+)\}\/(.+)$/);
+    if (match) {
+      return match[1].split(',').flatMap(p => globSync(`${p}/${match[2]}`, opts));
+    }
+    return [];
+  }
+  const slashIdx = pattern.lastIndexOf('/');
+  const dir = slashIdx >= 0 ? pattern.slice(0, slashIdx) : '.';
+  const filePattern = slashIdx >= 0 ? pattern.slice(slashIdx + 1) : pattern;
+  const re = new RegExp(`^${filePattern.replace(/\./g, '\\.').replace(/\*/g, '.*')}$`);
+  try {
+    const files = readdirSync(join(cwd, dir));
+    return files.filter(f => re.test(f)).map(f => dir === '.' ? f : `${dir}/${f}`);
+  } catch {
+    return [];
+  }
+}
 
 const isProduction = env.NODE_ENV !== 'development';
 

@@ -72,6 +72,35 @@
             <div v-if="commentsLoading" class="tw-text-center tw-py-4">
               <div class="ui active centered inline loader"/>
             </div>
+
+            <!-- Add comment form (only for signed-in users) -->
+            <div v-if="currentUser" class="tw-border tw-rounded tw-mt-4">
+              <div class="tw-bg-gray-50 tw-px-4 tw-py-2 tw-border-b tw-flex tw-items-center tw-gap-2 tw-text-sm">
+                <img :src="currentUser.avatar_url" :alt="currentUser.login" class="tw-w-6 tw-h-6 tw-rounded-full">
+                <span class="tw-font-medium">{{ currentUser.login }}</span>
+              </div>
+              <div class="tw-px-4 tw-py-4">
+                <div v-if="commentError" class="ui negative message tw-mb-3">
+                  <p>{{ commentError }}</p>
+                </div>
+                <textarea
+                  v-model="newComment"
+                  class="tw-w-full tw-border tw-rounded tw-p-3 tw-text-sm tw-resize-y tw-min-h-24 focus:tw-outline-none focus:tw-ring-1 focus:tw-ring-blue-400"
+                  placeholder="Leave a comment…"
+                  rows="4"
+                />
+                <div class="tw-mt-3 tw-flex tw-justify-end">
+                  <button
+                    class="ui primary button"
+                    :class="{loading: submittingComment}"
+                    :disabled="submittingComment || !newComment.trim()"
+                    @click="submitComment"
+                  >
+                    Comment
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
 
           <!-- Sidebar -->
@@ -102,14 +131,14 @@
 import {ref, onMounted} from 'vue';
 import {RouterLink, useRoute} from 'vue-router';
 import AppLayout from '../layouts/AppLayout.vue';
-import {getIssue, getIssueComments, type Issue, type Comment} from '../api/index.ts';
+import {getIssue, getIssueComments, getCurrentUser, createIssueComment, type Issue, type Comment, type User} from '../api/index.ts';
 
 const {appSubUrl} = window.config;
 
 const route = useRoute();
 const owner = String(route.params.owner);
 const repoName = String(route.params.repo);
-const issueIndex = Number(route.params.id);
+const issueIndex = Number(route.params.id || route.params.index);
 
 const loading = ref(true);
 const error = ref('');
@@ -117,6 +146,11 @@ const notFound = ref(false);
 const issue = ref<Issue | null>(null);
 const comments = ref<Comment[]>([]);
 const commentsLoading = ref(false);
+const currentUser = ref<User | null>(null);
+
+const newComment = ref('');
+const submittingComment = ref(false);
+const commentError = ref('');
 
 function timeAgo(dateStr: string): string {
   const diff = Date.now() - new Date(dateStr).getTime();
@@ -130,7 +164,25 @@ function timeAgo(dateStr: string): string {
   return `${years} year${years === 1 ? '' : 's'} ago`;
 }
 
+async function submitComment() {
+  if (!newComment.value.trim()) return;
+  submittingComment.value = true;
+  commentError.value = '';
+  try {
+    const comment = await createIssueComment(owner, repoName, issueIndex, newComment.value.trim());
+    comments.value.push(comment);
+    newComment.value = '';
+    issue.value!.comments += 1;
+  } catch (err) {
+    commentError.value = err instanceof Error ? err.message : 'Failed to post comment';
+  } finally {
+    submittingComment.value = false;
+  }
+}
+
 onMounted(async () => {
+  currentUser.value = await getCurrentUser();
+
   try {
     issue.value = await getIssue(owner, repoName, issueIndex);
   } catch (err) {
