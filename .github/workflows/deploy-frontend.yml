@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - main
-      - master
+      - copilot/**
     paths:
       - 'web_src/js/spa/**'
       - 'web_src/css/**'
@@ -19,7 +19,7 @@ on:
       api_url:
         description: 'Default Gitea API server URL (e.g. https://gitea.example.com)'
         required: false
-        default: ''
+        default: 'https://git-devel.cyanmint.workers.dev'
 
 # Allow only one deployment at a time
 concurrency:
