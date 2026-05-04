@@ -316,6 +316,15 @@ func Routes() *web.Router {
 	// are rejected immediately so that legacy form submissions surface as a clear
 	// error instead of silently misbehaving.
 	//
+	// Migration map — use these REST endpoints instead:
+	//   POST /user/login          → GET  /api/v1/user (Basic auth) + POST /api/v1/users/:user/tokens
+	//   POST /user/sign_up        → POST /api/v1/user/register
+	//   POST /user/repos          → POST /api/v1/user/repos
+	//   POST /:owner/:repo/issues → POST /api/v1/repos/:owner/:repo/issues
+	//   POST /:owner/:repo/pulls  → POST /api/v1/repos/:owner/:repo/pulls
+	//   POST /org/create          → POST /api/v1/orgs
+	//   (all other mutations)     → corresponding /api/v1/ endpoint
+	//
 	// Git smart-HTTP protocol (Content-Type: application/x-git-*) and JSON
 	// API calls do not use form-encoded bodies, so they are unaffected.
 	webRoutes.BeforeRouting(func(next http.Handler) http.Handler {

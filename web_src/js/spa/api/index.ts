@@ -175,8 +175,10 @@ export type PaginationOpts = {
  * Throws on bad credentials or network errors.
  */
 export async function login(username: string, password: string): Promise<User> {
-  // Encode credentials — basic auth requires no leading/trailing whitespace.
-  const basic = btoa(`${username}:${password}`);
+  // btoa only handles Latin-1 code points. Encode via TextEncoder → percent
+  // encoding so that non-ASCII usernames/passwords are transmitted safely.
+  const encode = (s: string) => Array.from(new TextEncoder().encode(s), (b) => String.fromCharCode(b)).join('');
+  const basic = btoa(`${encode(username)}:${encode(password)}`);
   const basicHeaders = {Authorization: `Basic ${basic}`};
 
   // Verify credentials by fetching the current user with Basic auth.

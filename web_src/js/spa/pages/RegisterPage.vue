@@ -120,8 +120,9 @@ async function handleRegister() {
     fieldErrors.value.retype = 'Passwords do not match.';
     return;
   }
-  if (form.value.password.length < 8) {
-    fieldErrors.value.password = 'Password must be at least 8 characters.';
+  // Let the server enforce the real minimum — do a basic sanity check only.
+  if (form.value.password.length < 1) {
+    fieldErrors.value.password = 'Password is required.';
     return;
   }
 
