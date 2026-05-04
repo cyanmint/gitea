@@ -46,9 +46,9 @@
         >
           <span class="tw-mt-0.5 tw-text-sm">{{ item.state === 'open' ? '🟢' : '✅' }}</span>
           <div class="tw-flex-1 tw-min-w-0">
-            <a :href="item.html_url" class="tw-font-medium hover:tw-text-blue-600 hover:tw-underline tw-text-gray-900">
+            <RouterLink :to="issueToPath(item)" class="tw-font-medium hover:tw-text-blue-600 hover:tw-underline tw-text-gray-900">
               {{ item.title }}
-            </a>
+            </RouterLink>
             <div class="tw-text-xs tw-text-gray-500 tw-mt-0.5">
               {{ item.html_url.replace(/\/issues\/\d+$/, '').replace(/^.*\//, '').replace(/.*github\.com\//, '') }}
               #{{ item.number }} opened {{ formatDate(item.created_at) }} by {{ item.user.login }}
@@ -96,6 +96,15 @@ const pageSize = 20;
 const items = ref<Issue[]>([]);
 const loading = ref(false);
 const error = ref<string | null>(null);
+
+function issueToPath(item: Issue): string {
+  try {
+    const u = new URL(item.html_url);
+    return u.pathname;
+  } catch {
+    return item.html_url;
+  }
+}
 
 function setFilter(s: 'open' | 'closed') {
   state.value = s;

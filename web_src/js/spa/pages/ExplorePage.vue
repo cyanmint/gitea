@@ -96,10 +96,38 @@
         </div>
       </div>
 
-      <!-- Organizations tab (placeholder) -->
+      <!-- Organizations tab -->
       <div v-else-if="activeTab === 'orgs'">
-        <div class="ui info message">
-          <p>Organization listing coming soon. This view will be powered by the API.</p>
+        <p v-if="orgs.length === 0" class="tw-text-gray-500">No organizations found.</p>
+        <div v-else class="ui list">
+          <div v-for="org in orgs" :key="org.id" class="item tw-py-3 tw-flex tw-items-center tw-gap-3 tw-border-b last:tw-border-0">
+            <img :src="org.avatar_url" :alt="org.login" class="ui avatar image tw-w-10 tw-h-10">
+            <div>
+              <RouterLink :to="`/${org.login}`" class="tw-font-semibold tw-text-blue-600 hover:tw-underline">
+                {{ org.login }}
+              </RouterLink>
+              <p v-if="org.full_name" class="tw-text-gray-600 tw-text-sm">{{ org.full_name }}</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Pagination -->
+        <div v-if="totalPages > 1" class="ui pagination menu tw-mt-4">
+          <button
+            class="item"
+            :class="{disabled: page <= 1}"
+            @click="changePage(page - 1)"
+          >
+            Previous
+          </button>
+          <div class="item">Page {{ page }} of {{ totalPages }}</div>
+          <button
+            class="item"
+            :class="{disabled: page >= totalPages}"
+            @click="changePage(page + 1)"
+          >
+            Next
+          </button>
         </div>
       </div>
     </div>
@@ -110,13 +138,14 @@
 import {ref, computed, watch, onMounted} from 'vue';
 import {RouterLink, useRoute} from 'vue-router';
 import AppLayout from '../layouts/AppLayout.vue';
-import {searchRepos, searchUsers, type Repository, type User} from '../api/index.ts';
+import {searchRepos, searchUsers, listOrgs, type Repository, type User} from '../api/index.ts';
 
 const route = useRoute();
 
 const activeTab = computed(() => String(route.meta.tab ?? 'repos'));
 const searchPlaceholder = computed(() => {
   if (activeTab.value === 'users') return 'Search users…';
+  if (activeTab.value === 'orgs') return 'Search organizations…';
   return 'Search repositories…';
 });
 
@@ -125,6 +154,7 @@ const loading = ref(false);
 const error = ref('');
 const repos = ref<Repository[]>([]);
 const users = ref<User[]>([]);
+const orgs = ref<User[]>([]);
 const page = ref(1);
 const totalPages = ref(1);
 const pageSize = 20;
@@ -153,6 +183,10 @@ async function loadData() {
     } else if (activeTab.value === 'users') {
       const result = await searchUsers(query.value, {page: page.value, limit: pageSize});
       users.value = result.data ?? [];
+      totalPages.value = Math.max(1, Math.ceil(result.totalCount / pageSize));
+    } else if (activeTab.value === 'orgs') {
+      const result = await listOrgs({page: page.value, limit: pageSize, query: query.value || undefined});
+      orgs.value = result.data ?? [];
       totalPages.value = Math.max(1, Math.ceil(result.totalCount / pageSize));
     }
   } catch (err) {

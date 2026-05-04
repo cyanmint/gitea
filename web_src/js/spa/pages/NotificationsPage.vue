@@ -34,12 +34,12 @@
             {{ typeIcon(n.subject.type) }}
           </span>
           <div class="tw-flex-1 tw-min-w-0">
-            <a
-              :href="n.subject.url || n.url"
+            <RouterLink
+              :to="notifToPath(n)"
               class="tw-font-medium hover:tw-underline tw-text-gray-900 hover:tw-text-blue-600"
             >
               {{ n.subject.title }}
-            </a>
+            </RouterLink>
             <div class="tw-text-xs tw-text-gray-500 tw-mt-0.5">
               {{ n.repository.full_name }}
               · {{ formatDate(n.updated_at) }}
@@ -66,6 +66,7 @@
 
 <script setup lang="ts">
 import {ref, watch, onMounted} from 'vue';
+import {RouterLink} from 'vue-router';
 import AppLayout from '../layouts/AppLayout.vue';
 import {getNotifications, markAllNotificationsRead, markNotificationRead, type Notification} from '../api/index.ts';
 
@@ -75,6 +76,17 @@ const error = ref<string | null>(null);
 const markingAll = ref(false);
 const page = ref(1);
 const pageSize = 20;
+
+function notifToPath(n: Notification): string {
+  try {
+    const u = new URL(n.subject.url);
+    const m = u.pathname.match(/\/api\/v1\/repos\/([^/]+)\/([^/]+)\/(issues|pulls)\/(\d+)/);
+    if (m) return `/${m[1]}/${m[2]}/${m[3]}/${m[4]}`;
+    return `/${n.repository.full_name}`;
+  } catch {
+    return `/${n.repository.full_name}`;
+  }
+}
 
 function typeIcon(type: Notification['subject']['type']): string {
   switch (type) {

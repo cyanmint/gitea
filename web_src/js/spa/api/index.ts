@@ -591,3 +591,151 @@ export async function createRepo(data: CreateRepoOpts): Promise<Repository> {
   if (!resp.ok) throw new Error(`Failed to create repo: ${resp.status}`);
   return resp.json();
 }
+
+// ---- Organizations ----
+
+/** List all public organizations. */
+export async function listOrgs(opts: PaginationOpts & {query?: string} = {}): Promise<{data: User[]; totalCount: number}> {
+  const params = new URLSearchParams({page: String(opts.page ?? 1), limit: String(opts.limit ?? 20)});
+  if (opts.query) params.set('query', opts.query);
+  const resp = await GET(`${apiBase}/admin/orgs?${params}`);
+  if (!resp.ok) throw new Error(`Failed to list orgs: ${resp.status}`);
+  const data: User[] = await resp.json();
+  return {data, totalCount: parseInt(resp.headers.get('X-Total-Count') ?? String(data.length), 10)};
+}
+
+// ---- SSH Keys ----
+
+export type SSHKey = {
+  id: number;
+  key_id: number;
+  title: string;
+  fingerprint: string;
+  created_at: string;
+};
+
+export async function listSSHKeys(): Promise<SSHKey[]> {
+  const resp = await GET(`${apiBase}/user/keys`);
+  if (!resp.ok) throw new Error(`Failed to list SSH keys: ${resp.status}`);
+  return resp.json();
+}
+
+export async function createSSHKey(title: string, key: string): Promise<SSHKey> {
+  const resp = await POST(`${apiBase}/user/keys`, {data: {title, key, read_only: false}});
+  if (!resp.ok) throw new Error(`Failed to create SSH key: ${resp.status}`);
+  return resp.json();
+}
+
+export async function deleteSSHKey(id: number): Promise<void> {
+  const resp = await DELETE(`${apiBase}/user/keys/${id}`);
+  if (!resp.ok) throw new Error(`Failed to delete SSH key: ${resp.status}`);
+}
+
+// ---- GPG Keys ----
+
+export type GPGKey = {
+  id: number;
+  key_id: string;
+  primary_key_id: string;
+  emails: {email: string; verified: boolean}[];
+  subkeys: GPGKey[];
+  created_at: string;
+  expires_at: string | null;
+};
+
+export async function listGPGKeys(): Promise<GPGKey[]> {
+  const resp = await GET(`${apiBase}/user/gpg_keys`);
+  if (!resp.ok) throw new Error(`Failed to list GPG keys: ${resp.status}`);
+  return resp.json();
+}
+
+export async function createGPGKey(armored_public_key: string): Promise<GPGKey> {
+  const resp = await POST(`${apiBase}/user/gpg_keys`, {data: {armored_public_key}});
+  if (!resp.ok) throw new Error(`Failed to create GPG key: ${resp.status}`);
+  return resp.json();
+}
+
+export async function deleteGPGKey(id: number): Promise<void> {
+  const resp = await DELETE(`${apiBase}/user/gpg_keys/${id}`);
+  if (!resp.ok) throw new Error(`Failed to delete GPG key: ${resp.status}`);
+}
+
+// ---- Access Tokens ----
+
+export type AccessToken = {
+  id: number;
+  name: string;
+  sha1?: string;
+  token_last_eight: string;
+  created?: string;
+};
+
+export async function listAccessTokens(username: string): Promise<AccessToken[]> {
+  const resp = await GET(`${apiBase}/users/${encodeURIComponent(username)}/tokens`);
+  if (!resp.ok) throw new Error(`Failed to list access tokens: ${resp.status}`);
+  return resp.json();
+}
+
+export async function createAccessToken(username: string, name: string, scopes?: string[]): Promise<AccessToken> {
+  const resp = await POST(`${apiBase}/users/${encodeURIComponent(username)}/tokens`, {
+    data: {name, ...(scopes && {scopes})},
+  });
+  if (!resp.ok) throw new Error(`Failed to create access token: ${resp.status}`);
+  return resp.json();
+}
+
+export async function deleteAccessToken(username: string, id: number): Promise<void> {
+  const resp = await DELETE(`${apiBase}/users/${encodeURIComponent(username)}/tokens/${id}`);
+  if (!resp.ok) throw new Error(`Failed to delete access token: ${resp.status}`);
+}
+
+// ---- Email Addresses ----
+
+export type EmailAddress = {
+  email: string;
+  verified: boolean;
+  primary: boolean;
+};
+
+export async function listEmails(): Promise<EmailAddress[]> {
+  const resp = await GET(`${apiBase}/user/emails`);
+  if (!resp.ok) throw new Error(`Failed to list emails: ${resp.status}`);
+  return resp.json();
+}
+
+export async function addEmail(email: string): Promise<EmailAddress[]> {
+  const resp = await POST(`${apiBase}/user/emails`, {data: {emails: [email]}});
+  if (!resp.ok) throw new Error(`Failed to add email: ${resp.status}`);
+  return resp.json();
+}
+
+export async function deleteEmail(email: string): Promise<void> {
+  const resp = await DELETE(`${apiBase}/user/emails`, {data: {emails: [email]}});
+  if (!resp.ok) throw new Error(`Failed to delete email: ${resp.status}`);
+}
+
+// ---- Admin ----
+
+export async function listAdminUsers(opts: PaginationOpts = {}): Promise<{data: User[]; totalCount: number}> {
+  const params = new URLSearchParams({page: String(opts.page ?? 1), limit: String(opts.limit ?? 20)});
+  const resp = await GET(`${apiBase}/admin/users?${params}`);
+  if (!resp.ok) throw new Error(`Failed to list admin users: ${resp.status}`);
+  const data: User[] = await resp.json();
+  return {data, totalCount: parseInt(resp.headers.get('X-Total-Count') ?? String(data.length), 10)};
+}
+
+export async function listAdminOrgs(opts: PaginationOpts = {}): Promise<{data: User[]; totalCount: number}> {
+  const params = new URLSearchParams({page: String(opts.page ?? 1), limit: String(opts.limit ?? 20)});
+  const resp = await GET(`${apiBase}/admin/orgs?${params}`);
+  if (!resp.ok) throw new Error(`Failed to list admin orgs: ${resp.status}`);
+  const data: User[] = await resp.json();
+  return {data, totalCount: parseInt(resp.headers.get('X-Total-Count') ?? String(data.length), 10)};
+}
+
+export async function listAdminRepos(opts: PaginationOpts = {}): Promise<{data: Repository[]; totalCount: number}> {
+  const params = new URLSearchParams({page: String(opts.page ?? 1), limit: String(opts.limit ?? 20)});
+  const resp = await GET(`${apiBase}/repos/search?${params}&limit=${opts.limit ?? 20}`);
+  if (!resp.ok) throw new Error(`Failed to list repos: ${resp.status}`);
+  const body = await resp.json() as {data: Repository[]};
+  return {data: body.data ?? [], totalCount: parseInt(resp.headers.get('X-Total-Count') ?? String(body.data?.length ?? 0), 10)};
+}

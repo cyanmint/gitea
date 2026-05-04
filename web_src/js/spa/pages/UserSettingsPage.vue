@@ -58,16 +58,221 @@
           </div>
         </template>
 
-        <!-- Other tabs - placeholder -->
-        <template v-else>
-          <h2 class="tw-text-xl tw-font-bold tw-mb-4">{{ currentTabLabel }}</h2>
-          <div class="ui placeholder segment">
-            <div class="tw-text-center tw-py-8 tw-text-gray-400">
-              This settings section is not yet implemented in the SPA.
-              <br>
-              <a :href="`${appSubUrl}/user/settings/${activeTab}`" class="tw-text-blue-600 hover:tw-underline tw-mt-2 tw-inline-block">
-                Open in classic view →
-              </a>
+        <!-- Account tab -->
+        <template v-else-if="activeTab === 'account'">
+          <h2 class="tw-text-xl tw-font-bold tw-mb-4">Account Settings</h2>
+
+          <!-- Emails section -->
+          <div class="ui segment">
+            <h3 class="tw-text-lg tw-font-semibold tw-mb-3">Email Addresses</h3>
+            <div v-if="emailsLoading" class="ui active centered inline loader"/>
+            <div v-else>
+              <div v-for="addr in emails" :key="addr.email" class="tw-flex tw-items-center tw-gap-2 tw-mb-2">
+                <span class="tw-flex-1">{{ addr.email }}</span>
+                <span v-if="addr.primary" class="ui mini green label">Primary</span>
+                <span v-if="addr.verified" class="ui mini blue label">Verified</span>
+                <span v-else class="ui mini label">Unverified</span>
+                <button v-if="!addr.primary" class="ui mini red basic button" @click="removeEmail(addr.email)">
+                  Remove
+                </button>
+              </div>
+              <div class="ui divider"/>
+              <h4 class="tw-font-semibold tw-mb-2">Add Email Address</h4>
+              <div class="ui form">
+                <div class="field">
+                  <input v-model="newEmail" type="email" placeholder="new@example.com">
+                </div>
+                <button class="ui primary button" @click="submitAddEmail">Add Email</button>
+                <div v-if="emailError" class="ui negative message tw-mt-2"><p>{{ emailError }}</p></div>
+                <div v-if="emailSuccess" class="ui success message tw-mt-2"><p>{{ emailSuccess }}</p></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Delete account notice -->
+          <div class="ui segment">
+            <h3 class="tw-text-lg tw-font-semibold tw-mb-2 tw-text-red-600">Delete Account</h3>
+            <p class="tw-text-gray-600 tw-mb-2">
+              Account deletion must be performed via the classic Gitea interface.
+            </p>
+            <a :href="`${appSubUrl}/user/settings/account`" class="ui red basic button" target="_self">
+              Open in classic view →
+            </a>
+          </div>
+        </template>
+
+        <!-- Appearance tab -->
+        <template v-else-if="activeTab === 'appearance'">
+          <h2 class="tw-text-xl tw-font-bold tw-mb-4">Appearance</h2>
+          <div class="ui form">
+            <div class="field">
+              <label>Theme</label>
+              <select v-model="appearance.theme" class="ui dropdown">
+                <option value="gitea-auto">Auto (system default)</option>
+                <option value="gitea-light">Light</option>
+                <option value="gitea-dark">Dark</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Language</label>
+              <input v-model="appearance.language" type="text" placeholder="e.g. en-US">
+            </div>
+            <button class="ui primary button" @click="saveAppearance">Save Changes</button>
+            <div v-if="appearanceSuccess" class="ui success message tw-mt-2">Appearance saved.</div>
+            <div v-if="appearanceError" class="ui negative message tw-mt-2"><p>{{ appearanceError }}</p></div>
+          </div>
+        </template>
+
+        <!-- Notifications tab -->
+        <template v-else-if="activeTab === 'notifications'">
+          <h2 class="tw-text-xl tw-font-bold tw-mb-4">Notification Preferences</h2>
+          <div class="ui info message">
+            <p>
+              Notification preferences are managed via the classic Gitea interface.
+            </p>
+          </div>
+          <a :href="`${appSubUrl}/user/settings/notifications`" class="ui primary button" target="_self">
+            Open in classic view →
+          </a>
+        </template>
+
+        <!-- Security tab -->
+        <template v-else-if="activeTab === 'security'">
+          <h2 class="tw-text-xl tw-font-bold tw-mb-4">Security</h2>
+          <div class="ui segment">
+            <h3 class="tw-text-lg tw-font-semibold tw-mb-2">Change Password</h3>
+            <p class="tw-text-gray-600 tw-mb-3">
+              Password changes and two-factor authentication management must be done via the classic Gitea interface.
+            </p>
+            <a :href="`${appSubUrl}/user/settings/security`" class="ui primary button" target="_self">
+              Manage Security in classic view →
+            </a>
+          </div>
+        </template>
+
+        <!-- Applications tab -->
+        <template v-else-if="activeTab === 'applications'">
+          <h2 class="tw-text-xl tw-font-bold tw-mb-4">Applications</h2>
+
+          <!-- Newly generated token -->
+          <div v-if="newTokenSha1" class="ui success message tw-mb-4">
+            <p class="tw-font-semibold">Your new token (copy it now — it will not be shown again):</p>
+            <code class="tw-break-all tw-select-all tw-text-sm">{{ newTokenSha1 }}</code>
+          </div>
+
+          <!-- Create token form -->
+          <div class="ui segment">
+            <h3 class="tw-text-lg tw-font-semibold tw-mb-3">Generate New Token</h3>
+            <div class="ui form">
+              <div class="field">
+                <label>Token Name</label>
+                <input v-model="newTokenName" type="text" placeholder="My application">
+              </div>
+              <button class="ui primary button" :disabled="tokensLoading" @click="submitCreateToken">
+                Generate Token
+              </button>
+              <div v-if="tokenError" class="ui negative message tw-mt-2"><p>{{ tokenError }}</p></div>
+            </div>
+          </div>
+
+          <!-- Token list -->
+          <div class="ui segment">
+            <h3 class="tw-text-lg tw-font-semibold tw-mb-3">Existing Tokens</h3>
+            <div v-if="tokensLoading" class="ui active centered inline loader"/>
+            <p v-else-if="tokens.length === 0" class="tw-text-gray-500">No tokens yet.</p>
+            <table v-else class="ui celled table">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Last 8 chars</th>
+                  <th>Created</th>
+                  <th/>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="tok in tokens" :key="tok.id">
+                  <td>{{ tok.name }}</td>
+                  <td><code>…{{ tok.token_last_eight }}</code></td>
+                  <td>{{ tok.created ? formatDate(tok.created) : '—' }}</td>
+                  <td>
+                    <button class="ui mini red basic button" @click="submitDeleteToken(tok)">Delete</button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </template>
+
+        <!-- Keys tab -->
+        <template v-else-if="activeTab === 'keys'">
+          <h2 class="tw-text-xl tw-font-bold tw-mb-4">SSH / GPG Keys</h2>
+
+          <!-- SSH Keys -->
+          <div class="ui segment">
+            <h3 class="tw-text-lg tw-font-semibold tw-mb-3">SSH Keys</h3>
+            <div v-if="sshLoading" class="ui active centered inline loader"/>
+            <div v-else>
+              <p v-if="sshKeys.length === 0" class="tw-text-gray-500 tw-mb-3">No SSH keys.</p>
+              <table v-else class="ui celled table tw-mb-4">
+                <thead>
+                  <tr><th>Title</th><th>Fingerprint</th><th>Added</th><th/></tr>
+                </thead>
+                <tbody>
+                  <tr v-for="k in sshKeys" :key="k.id">
+                    <td>{{ k.title }}</td>
+                    <td><code class="tw-text-xs">{{ k.fingerprint }}</code></td>
+                    <td>{{ formatDate(k.created_at) }}</td>
+                    <td><button class="ui mini red basic button" @click="submitDeleteSSH(k)">Delete</button></td>
+                  </tr>
+                </tbody>
+              </table>
+              <h4 class="tw-font-semibold tw-mb-2">Add SSH Key</h4>
+              <div class="ui form">
+                <div class="field">
+                  <label>Title</label>
+                  <input v-model="newSSHTitle" type="text" placeholder="My laptop">
+                </div>
+                <div class="field">
+                  <label>Key</label>
+                  <textarea v-model="newSSHKey" rows="4" placeholder="ssh-rsa AAAA..."/>
+                </div>
+                <button class="ui primary button" @click="submitAddSSH">Add Key</button>
+                <div v-if="sshError" class="ui negative message tw-mt-2"><p>{{ sshError }}</p></div>
+                <div v-if="sshSuccess" class="ui success message tw-mt-2"><p>{{ sshSuccess }}</p></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- GPG Keys -->
+          <div class="ui segment">
+            <h3 class="tw-text-lg tw-font-semibold tw-mb-3">GPG Keys</h3>
+            <div v-if="gpgLoading" class="ui active centered inline loader"/>
+            <div v-else>
+              <p v-if="gpgKeys.length === 0" class="tw-text-gray-500 tw-mb-3">No GPG keys.</p>
+              <table v-else class="ui celled table tw-mb-4">
+                <thead>
+                  <tr><th>Key ID</th><th>Emails</th><th>Added</th><th>Expires</th><th/></tr>
+                </thead>
+                <tbody>
+                  <tr v-for="k in gpgKeys" :key="k.id">
+                    <td><code class="tw-text-xs">{{ k.key_id }}</code></td>
+                    <td>{{ k.emails.map(e => e.email).join(', ') }}</td>
+                    <td>{{ formatDate(k.created_at) }}</td>
+                    <td>{{ k.expires_at ? formatDate(k.expires_at) : 'Never' }}</td>
+                    <td><button class="ui mini red basic button" @click="submitDeleteGPG(k)">Delete</button></td>
+                  </tr>
+                </tbody>
+              </table>
+              <h4 class="tw-font-semibold tw-mb-2">Add GPG Key</h4>
+              <div class="ui form">
+                <div class="field">
+                  <label>Armored Public Key</label>
+                  <textarea v-model="newGPGKey" rows="6" placeholder="-----BEGIN PGP PUBLIC KEY BLOCK-----"/>
+                </div>
+                <button class="ui primary button" @click="submitAddGPG">Add Key</button>
+                <div v-if="gpgError" class="ui negative message tw-mt-2"><p>{{ gpgError }}</p></div>
+                <div v-if="gpgSuccess" class="ui success message tw-mt-2"><p>{{ gpgSuccess }}</p></div>
+              </div>
             </div>
           </div>
         </template>
@@ -77,16 +282,26 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, onMounted} from 'vue';
+import {ref, computed, watch, onMounted} from 'vue';
 import {useRoute, RouterLink} from 'vue-router';
 import AppLayout from '../layouts/AppLayout.vue';
 import {GET, PATCH} from '../../modules/fetch.ts';
 import {appSubUrl, apiBase} from '../spaconfig.ts';
+import {
+  getCurrentUser,
+  listEmails, addEmail, deleteEmail,
+  listSSHKeys, createSSHKey, deleteSSHKey,
+  listGPGKeys, createGPGKey, deleteGPGKey,
+  listAccessTokens, createAccessToken, deleteAccessToken,
+  type User, type EmailAddress, type SSHKey, type GPGKey, type AccessToken,
+} from '../api/index.ts';
 
 const route = useRoute();
 const loading = ref(false);
 const error = ref<string | null>(null);
 const saveSuccess = ref(false);
+
+const currentUser = ref<User | null>(null);
 
 const tabs = [
   {path: '/user/settings', label: 'Profile', key: 'profile'},
@@ -103,14 +318,15 @@ const activeTab = computed(() => {
   return p ?? 'profile';
 });
 
-const currentTabLabel = computed(() => {
-  const tab = tabs.find(t => t.key === activeTab.value);
-  return tab?.label ?? 'Settings';
-});
-
 function isActiveTab(tabPath: string): boolean {
   return route.fullPath === tabPath || route.fullPath.startsWith(tabPath + '/');
 }
+
+function formatDate(d: string): string {
+  return new Date(d).toLocaleDateString();
+}
+
+// ---- Profile ----
 
 type UserSettings = {
   full_name: string;
@@ -160,9 +376,230 @@ async function saveProfile() {
   }
 }
 
-onMounted(() => {
-  if (activeTab.value === 'profile') {
-    loadProfile();
+// ---- Account / Emails ----
+
+const emails = ref<EmailAddress[]>([]);
+const emailsLoading = ref(false);
+const newEmail = ref('');
+const emailError = ref('');
+const emailSuccess = ref('');
+
+async function loadEmails() {
+  emailsLoading.value = true;
+  try {
+    emails.value = await listEmails();
+  } catch (e) {
+    emailError.value = String(e);
+  } finally {
+    emailsLoading.value = false;
   }
+}
+
+async function submitAddEmail() {
+  emailError.value = '';
+  emailSuccess.value = '';
+  try {
+    await addEmail(newEmail.value);
+    newEmail.value = '';
+    emailSuccess.value = 'Email added. Check your inbox for a verification email.';
+    await loadEmails();
+  } catch (e) {
+    emailError.value = String(e);
+  }
+}
+
+async function removeEmail(email: string) {
+  emailError.value = '';
+  try {
+    await deleteEmail(email);
+    await loadEmails();
+  } catch (e) {
+    emailError.value = String(e);
+  }
+}
+
+// ---- Appearance ----
+
+const appearance = ref({theme: 'gitea-auto', language: ''});
+const appearanceSuccess = ref(false);
+const appearanceError = ref('');
+
+async function loadAppearance() {
+  loading.value = true;
+  error.value = null;
+  try {
+    const resp = await GET(`${apiBase}/user/settings`);
+    if (!resp.ok) throw new Error(`Failed to load settings: ${resp.status}`);
+    const data = await resp.json() as {theme?: string; language?: string};
+    appearance.value.theme = data.theme ?? 'gitea-auto';
+    appearance.value.language = data.language ?? '';
+  } catch (e) {
+    error.value = String(e);
+  } finally {
+    loading.value = false;
+  }
+}
+
+async function saveAppearance() {
+  appearanceSuccess.value = false;
+  appearanceError.value = '';
+  try {
+    const resp = await PATCH(`${apiBase}/user/settings`, {data: appearance.value});
+    if (!resp.ok) throw new Error(`Save failed: ${resp.status}`);
+    appearanceSuccess.value = true;
+  } catch (e) {
+    appearanceError.value = String(e);
+  }
+}
+
+// ---- Applications / Tokens ----
+
+const tokens = ref<AccessToken[]>([]);
+const tokensLoading = ref(false);
+const newTokenName = ref('');
+const newTokenSha1 = ref('');
+const tokenError = ref('');
+
+async function loadTokens() {
+  if (!currentUser.value) return;
+  tokensLoading.value = true;
+  try {
+    tokens.value = await listAccessTokens(currentUser.value.login);
+  } catch (e) {
+    tokenError.value = String(e);
+  } finally {
+    tokensLoading.value = false;
+  }
+}
+
+async function submitCreateToken() {
+  if (!currentUser.value || !newTokenName.value.trim()) return;
+  tokenError.value = '';
+  newTokenSha1.value = '';
+  try {
+    const tok = await createAccessToken(currentUser.value.login, newTokenName.value.trim());
+    newTokenSha1.value = tok.sha1 ?? '';
+    newTokenName.value = '';
+    await loadTokens();
+  } catch (e) {
+    tokenError.value = String(e);
+  }
+}
+
+async function submitDeleteToken(tok: AccessToken) {
+  if (!currentUser.value) return;
+  try {
+    await deleteAccessToken(currentUser.value.login, tok.id);
+    await loadTokens();
+  } catch (e) {
+    tokenError.value = String(e);
+  }
+}
+
+// ---- SSH Keys ----
+
+const sshKeys = ref<SSHKey[]>([]);
+const sshLoading = ref(false);
+const newSSHTitle = ref('');
+const newSSHKey = ref('');
+const sshError = ref('');
+const sshSuccess = ref('');
+
+async function loadSSHKeys() {
+  sshLoading.value = true;
+  try {
+    sshKeys.value = await listSSHKeys();
+  } catch (e) {
+    sshError.value = String(e);
+  } finally {
+    sshLoading.value = false;
+  }
+}
+
+async function submitAddSSH() {
+  sshError.value = '';
+  sshSuccess.value = '';
+  try {
+    await createSSHKey(newSSHTitle.value.trim(), newSSHKey.value.trim());
+    newSSHTitle.value = '';
+    newSSHKey.value = '';
+    sshSuccess.value = 'SSH key added.';
+    await loadSSHKeys();
+  } catch (e) {
+    sshError.value = String(e);
+  }
+}
+
+async function submitDeleteSSH(k: SSHKey) {
+  sshError.value = '';
+  try {
+    await deleteSSHKey(k.id);
+    await loadSSHKeys();
+  } catch (e) {
+    sshError.value = String(e);
+  }
+}
+
+// ---- GPG Keys ----
+
+const gpgKeys = ref<GPGKey[]>([]);
+const gpgLoading = ref(false);
+const newGPGKey = ref('');
+const gpgError = ref('');
+const gpgSuccess = ref('');
+
+async function loadGPGKeys() {
+  gpgLoading.value = true;
+  try {
+    gpgKeys.value = await listGPGKeys();
+  } catch (e) {
+    gpgError.value = String(e);
+  } finally {
+    gpgLoading.value = false;
+  }
+}
+
+async function submitAddGPG() {
+  gpgError.value = '';
+  gpgSuccess.value = '';
+  try {
+    await createGPGKey(newGPGKey.value.trim());
+    newGPGKey.value = '';
+    gpgSuccess.value = 'GPG key added.';
+    await loadGPGKeys();
+  } catch (e) {
+    gpgError.value = String(e);
+  }
+}
+
+async function submitDeleteGPG(k: GPGKey) {
+  gpgError.value = '';
+  try {
+    await deleteGPGKey(k.id);
+    await loadGPGKeys();
+  } catch (e) {
+    gpgError.value = String(e);
+  }
+}
+
+// ---- Mount / watch ----
+
+async function loadTabData(tab: string) {
+  switch (tab) {
+    case 'profile': await loadProfile(); break;
+    case 'account': await loadEmails(); break;
+    case 'appearance': await loadAppearance(); break;
+    case 'applications': await loadTokens(); break;
+    case 'keys':
+      await Promise.all([loadSSHKeys(), loadGPGKeys()]);
+      break;
+  }
+}
+
+watch(activeTab, (tab) => { void loadTabData(tab); });
+
+onMounted(async () => {
+  currentUser.value = await getCurrentUser();
+  await loadTabData(activeTab.value);
 });
 </script>
