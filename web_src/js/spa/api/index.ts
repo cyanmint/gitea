@@ -1,5 +1,42 @@
-import {GET, POST, PATCH, PUT, DELETE} from '../../modules/fetch.ts';
-import {apiBase} from '../spaconfig.ts';
+import {request, GET as _GET, POST as _POST, PATCH as _PATCH, PUT as _PUT, DELETE as _DELETE} from '../../modules/fetch.ts';
+import type {RequestOpts} from '../../types.ts';
+import {apiBase, appSubUrl} from '../spaconfig.ts';
+
+// ---- Token storage ----
+
+const TOKEN_KEY = 'gitea-spa-token';
+
+/** Returns the stored API token, or null when not signed in. */
+export function getStoredToken(): string | null {
+  return localStorage.getItem(TOKEN_KEY);
+}
+
+/** Persists an API token to localStorage, or removes it when token is null. */
+export function setStoredToken(token: string | null): void {
+  if (token) {
+    localStorage.setItem(TOKEN_KEY, token);
+  } else {
+    localStorage.removeItem(TOKEN_KEY);
+  }
+}
+
+// ---- Token-aware fetch wrappers ----
+// These shadow the raw fetch helpers so all api/index.ts calls automatically
+// carry Authorization: token <token> when a token is stored.
+
+function withToken(opts: RequestOpts = {}): RequestOpts {
+  const token = getStoredToken();
+  if (!token) return opts;
+  const headers = new Headers((opts.headers ?? {}) as Record<string, string>);
+  if (!headers.has('Authorization')) headers.set('Authorization', `token ${token}`);
+  return {...opts, headers};
+}
+
+const GET = (url: string, opts?: RequestOpts) => _GET(url, withToken(opts));
+const POST = (url: string, opts?: RequestOpts) => _POST(url, withToken(opts));
+const PATCH = (url: string, opts?: RequestOpts) => _PATCH(url, withToken(opts));
+const PUT = (url: string, opts?: RequestOpts) => _PUT(url, withToken(opts));
+const DELETE = (url: string, opts?: RequestOpts) => _DELETE(url, withToken(opts));
 
 // ---- Shared types (subset of Gitea API v1 swagger) ----
 
@@ -128,6 +165,46 @@ export type PaginationOpts = {
 };
 
 // ---- Authentication ----
+
+/**
+ * Sign in using username + password.
+ * Verifies credentials via Basic auth, then exchanges them for a named API
+ * token that is persisted to localStorage so subsequent API calls are
+ * authenticated without re-sending the password.
+ *
+ * Throws on bad credentials or network errors.
+ */
+export async function login(username: string, password: string): Promise<User> {
+  // Encode credentials — basic auth requires no leading/trailing whitespace.
+  const basic = btoa(`${username}:${password}`);
+  const basicHeaders = {Authorization: `Basic ${basic}`};
+
+  // Verify credentials by fetching the current user with Basic auth.
+  const userResp = await request(`${apiBase}/user`, {
+    method: 'GET',
+    headers: basicHeaders,
+  });
+  if (!userResp.ok) throw new Error('Invalid username or password.');
+  const user: User = await userResp.json();
+
+  // Create a named API token so future requests use a token instead of password.
+  const tokenResp = await request(`${apiBase}/users/${encodeURIComponent(username)}/tokens`, {
+    method: 'POST',
+    headers: basicHeaders,
+    data: {name: `gitea-spa-${Date.now()}`},
+  });
+  if (tokenResp.ok) {
+    const tokenData: {sha1: string} = await tokenResp.json();
+    setStoredToken(tokenData.sha1);
+  }
+
+  return user;
+}
+
+/** Sign out: remove the stored API token. */
+export function logout(): void {
+  setStoredToken(null);
+}
 
 /** Returns the currently signed-in user, or null when not signed in. */
 export async function getCurrentUser(): Promise<User | null> {

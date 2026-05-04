@@ -41,10 +41,10 @@
 </head>
 <body>
   <div id="app"></div>
-  <!-- Entry script is resolved relative to this file (../web_src/…) because
-       vite.frontend.config.ts sets root to frontend/. The leading slash form
-       (/web_src/…) would be interpreted relative to the Vite root directory
-       which is frontend/, not the project root. -->
-  <script type="module" src="../web_src/js/spa/main.ts"></script>
+  <!-- spa-entry.ts imports the standalone CSS bundle (theme + Fomantic UI
+       modules + Tailwind) before mounting the Vue app. Using a dedicated entry
+       keeps CSS out of main.ts, which is also imported by the embedded build
+       where the Go binary injects its own CSS. -->
+  <script type="module" src="./spa-entry.ts"></script>
 </body>
 </html>
