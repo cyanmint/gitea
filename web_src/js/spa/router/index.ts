@@ -86,11 +86,20 @@ const routes: RouteRecordRaw[] = [
 
   // ── Organisation ──────────────────────────────────────────────────────────
   {path: '/org/create', component: UserProfilePage, meta: {title: 'New Organisation'}},
+  {path: '/org/:org', component: UserProfilePage, meta: {title: 'Organisation'}},
   {path: '/org/:org/members', component: UserProfilePage, meta: {title: 'Organisation Members'}},
   {path: '/org/:org/teams', component: UserProfilePage, meta: {title: 'Teams'}},
   {path: '/org/:org/teams/:team', component: UserProfilePage, meta: {title: 'Team'}},
+  {path: '/org/:org/settings', component: UserSettingsPage, meta: {title: 'Organisation Settings'}},
+  {path: '/org/:org/settings/:tab', component: UserSettingsPage, meta: {title: 'Organisation Settings'}},
 
   // ── Site-admin (/-/admin/…) ───────────────────────────────────────────────
+  // Legacy paths: /admin/... → /-/admin/... (old Gitea used /admin/, new uses /-/admin/)
+  {path: '/admin', redirect: '/-/admin'},
+  {path: '/admin/:section', redirect: (to) => `/-/admin/${to.params.section}`},
+  {path: '/admin/:section/:subsection', redirect: (to) => `/-/admin/${to.params.section}/${to.params.subsection}`},
+  {path: '/admin/:section/:subsection/:action', redirect: (to) => `/-/admin/${to.params.section}/${to.params.subsection}/${to.params.action}`},
+
   {path: '/-/admin', component: AdminPage, meta: {title: 'Administration'}},
   {path: '/-/admin/:section', component: AdminPage, meta: {title: 'Administration'}},
   {path: '/-/admin/:section/:subsection', component: AdminPage, meta: {title: 'Administration'}},
@@ -153,6 +162,19 @@ const routes: RouteRecordRaw[] = [
   // Repository settings
   {path: '/:owner/:repo/settings', component: RepoOverviewPage, meta: {title: 'Settings'}},
   {path: '/:owner/:repo/settings/:tab', component: RepoOverviewPage, meta: {title: 'Settings'}},
+
+  // Forks / watchers / stargazers
+  {path: '/:owner/:repo/forks', component: RepoOverviewPage, meta: {title: 'Forks'}},
+  {path: '/:owner/:repo/watchers', component: RepoOverviewPage, meta: {title: 'Watchers'}},
+  {path: '/:owner/:repo/stargazers', component: RepoOverviewPage, meta: {title: 'Stargazers'}},
+
+  // Actions (CI)
+  {path: '/:owner/:repo/actions', component: RepoOverviewPage, meta: {title: 'Actions'}},
+  {path: '/:owner/:repo/actions/runs/:runId', component: RepoOverviewPage, meta: {title: 'Action Run'}},
+  {path: '/:owner/:repo/actions/workflows/:workflow', component: RepoOverviewPage, meta: {title: 'Workflow'}},
+
+  // Packages
+  {path: '/:owner/:repo/packages', component: RepoOverviewPage, meta: {title: 'Packages'}},
 
   // ── User / org profile — LAST dynamic single-segment path ─────────────────
   {path: '/:username', component: UserProfilePage, meta: {title: 'Profile', public: true}},
