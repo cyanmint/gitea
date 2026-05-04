@@ -41,7 +41,10 @@
 </head>
 <body>
   <div id="app"></div>
-  <!-- Entry script is resolved from the project root by vite.frontend.config.ts -->
-  <script type="module" src="/web_src/js/spa/main.ts"></script>
+  <!-- Entry script is resolved relative to this file (../web_src/…) because
+       vite.frontend.config.ts sets root to frontend/. The leading slash form
+       (/web_src/…) would be interpreted relative to the Vite root directory
+       which is frontend/, not the project root. -->
+  <script type="module" src="../web_src/js/spa/main.ts"></script>
 </body>
 </html>

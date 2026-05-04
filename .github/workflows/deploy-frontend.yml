@@ -59,8 +59,10 @@ jobs:
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          # Vite places the HTML in frontend-dist/frontend/ (mirrors the input path)
-          path: frontend-dist/frontend
+          # Upload the whole frontend-dist/ so both index.html and assets/ are
+          # included. The HTML uses relative ./assets/… URLs (base: './') so it
+          # works at any URL prefix without baking a path into the bundle.
+          path: frontend-dist
 
   deploy:
     name: Deploy to GitHub Pages
