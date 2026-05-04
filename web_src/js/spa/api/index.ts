@@ -739,3 +739,43 @@ export async function listAdminRepos(opts: PaginationOpts = {}): Promise<{data: 
   const body = await resp.json() as {data: Repository[]};
   return {data: body.data ?? [], totalCount: parseInt(resp.headers.get('X-Total-Count') ?? String(body.data?.length ?? 0), 10)};
 }
+
+// ---- Activity feeds ----
+
+export type ActivityFeed = {
+  id: number;
+  op_type: string;
+  act_user: User;
+  repo: Repository | null;
+  ref_name: string;
+  content: string;
+  created: string;
+};
+
+export async function getRepoActivityFeeds(owner: string, repo: string, opts: PaginationOpts = {}): Promise<ActivityFeed[]> {
+  const params = new URLSearchParams({page: String(opts.page ?? 1), limit: String(opts.limit ?? 20)});
+  const resp = await GET(`${apiBase}/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/activities/feeds?${params}`);
+  if (!resp.ok) throw new Error(`Failed to fetch activity feeds: ${resp.status}`);
+  return resp.json();
+}
+
+// ---- Password change / account deletion ----
+
+export async function changePassword(oldPassword: string, newPassword: string): Promise<void> {
+  const resp = await request(`${apiBase}/user/change_password`, {
+    method: 'POST',
+    data: {old_password: oldPassword, new_password: newPassword},
+  });
+  if (!resp.ok) {
+    const body = await resp.json().catch(() => ({message: 'Unknown error'})) as {message: string};
+    throw new Error(body.message ?? `Failed to change password: ${resp.status}`);
+  }
+}
+
+export async function deleteSelf(): Promise<void> {
+  const resp = await request(`${apiBase}/user`, {method: 'DELETE'});
+  if (!resp.ok) {
+    const body = await resp.json().catch(() => ({message: 'Unknown error'})) as {message: string};
+    throw new Error(body.message ?? `Failed to delete account: ${resp.status}`);
+  }
+}

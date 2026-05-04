@@ -1013,6 +1013,8 @@ func Routes() *web.Router {
 		// Users (requires user scope)
 		m.Group("/user", func() {
 			m.Get("", user.GetAuthenticatedUser)
+			m.Delete("", reqToken(), user.DeleteSelf)
+			m.Post("/change_password", reqToken(), bind(api.ChangePasswordOption{}), user.ChangePassword)
 			m.Group("/settings", func() {
 				m.Get("", user.GetUserSettings)
 				m.Patch("", bind(api.UserSettingsOptions{}), user.UpdateUserSettings)

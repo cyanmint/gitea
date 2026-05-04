@@ -120,6 +120,16 @@ type RenameUserOption struct {
 	NewName string `json:"new_username" binding:"Required"`
 }
 
+// ChangePasswordOption options for changing password
+// swagger:model
+type ChangePasswordOption struct {
+	// The current password (required unless account has no password set)
+	OldPassword string `json:"old_password"`
+	// The new password to set
+	// required: true
+	NewPassword string `json:"new_password" binding:"Required;MaxSize(255)"`
+}
+
 // UpdateUserAvatarUserOption options when updating the user avatar
 type UpdateUserAvatarOption struct {
 	// image must be base64 encoded
