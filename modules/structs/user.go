@@ -99,6 +99,18 @@ type UserSettingsOptions struct {
 	HideActivity *bool `json:"hide_activity"`
 }
 
+// RegisterUserOption describes the request body for public self-registration.
+// swagger:model
+type RegisterUserOption struct {
+	// required: true
+	// unique: true
+	Username string `json:"username" binding:"Required;Username;MaxSize(40)"`
+	// required: true
+	Email string `json:"email" binding:"Required;Email;MaxSize(254)"`
+	// required: true
+	Password string `json:"password" binding:"Required;MaxSize(255)"`
+}
+
 // RenameUserOption options when renaming a user
 type RenameUserOption struct {
 	// New username for this user. This name cannot be in use yet by any other user.

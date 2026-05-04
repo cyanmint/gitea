@@ -967,6 +967,9 @@ func Routes() *web.Router {
 				Patch(reqToken(), notify.ReadThread)
 		}, tokenRequiresScopes(auth_model.AccessTokenScopeCategoryNotification))
 
+		// Public self-registration — no token required.
+		m.Post("/user/register", bind(api.RegisterUserOption{}), user.Register)
+
 		// Users (requires user scope)
 		m.Group("/users", func() {
 			m.Get("/search", reqExploreSignIn(), reqUsersExploreEnabled(), user.Search)

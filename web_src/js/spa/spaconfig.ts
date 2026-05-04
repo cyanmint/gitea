@@ -48,3 +48,25 @@ export const apiBase: string = `${appSubUrl}/api/v1`;
 export const assetUrlPrefix: string = buildApiUrl ?
   '' :
   cfg.assetUrlPrefix;
+
+/**
+ * Rewrites a URL that came from the Gitea API so its origin matches the
+ * configured backend server.  This is needed in the standalone SPA (deployed
+ * to GitHub Pages) because the Gitea server may return absolute URLs with its
+ * own hostname, which must be preserved as the clone / download target.
+ *
+ * In embedded mode the SPA and the backend share the same origin, so no
+ * rewriting is required.
+ */
+export function rewriteToBackend(url: string): string {
+  if (!isStandalone || !url || !appSubUrl) return url;
+  try {
+    const u = new URL(url);
+    const backend = new URL(appSubUrl);
+    u.protocol = backend.protocol;
+    u.host = backend.host;
+    return u.toString();
+  } catch {
+    return url;
+  }
+}

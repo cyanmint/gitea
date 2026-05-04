@@ -1,5 +1,7 @@
 import {createRouter, type RouteRecordRaw} from 'vue-router';
 import {createQueryHistory} from './queryHistory.ts';
+
+// Pages
 import HomePage from '../pages/HomePage.vue';
 import ExplorePage from '../pages/ExplorePage.vue';
 import LoginPage from '../pages/LoginPage.vue';
@@ -8,6 +10,7 @@ import UserProfilePage from '../pages/UserProfilePage.vue';
 import UserIssuesPage from '../pages/UserIssuesPage.vue';
 import UserSettingsPage from '../pages/UserSettingsPage.vue';
 import NotificationsPage from '../pages/NotificationsPage.vue';
+import AdminPage from '../pages/AdminPage.vue';
 import RepoOverviewPage from '../pages/RepoOverviewPage.vue';
 import IssueListPage from '../pages/IssueListPage.vue';
 import IssueDetailPage from '../pages/IssueDetailPage.vue';
@@ -22,72 +25,133 @@ import RepoWikiPage from '../pages/RepoWikiPage.vue';
 import RepoActivityPage from '../pages/RepoActivityPage.vue';
 import NotFoundPage from '../pages/NotFoundPage.vue';
 
+// ---------------------------------------------------------------------------
+// Route table
+//
+// Priority rules:
+//   1. Literal path segments always win over dynamic ones at the same level.
+//   2. All /-/ and /user/ routes are declared before /:owner/:repo and
+//      /:username so the catchall dynamic segments never swallow them.
+//   3. The /:username catch-all comes last among dynamic one-segment paths so
+//      every repo, setting, and explore route wins first.
+// ---------------------------------------------------------------------------
+
 const routes: RouteRecordRaw[] = [
-  // Home / dashboard
+
+  // ── Dashboard / home ──────────────────────────────────────────────────────
   {path: '/', component: HomePage, meta: {title: 'Dashboard'}},
 
-  // Explore
+  // ── Explore ───────────────────────────────────────────────────────────────
   {path: '/explore', redirect: '/explore/repos'},
   {path: '/explore/repos', component: ExplorePage, meta: {title: 'Explore Repositories', tab: 'repos'}},
   {path: '/explore/users', component: ExplorePage, meta: {title: 'Explore Users', tab: 'users'}},
   {path: '/explore/organizations', component: ExplorePage, meta: {title: 'Explore Organizations', tab: 'orgs'}},
 
-  // Auth
+  // ── Auth ──────────────────────────────────────────────────────────────────
   {path: '/user/login', component: LoginPage, meta: {title: 'Sign In', public: true}},
   {path: '/user/sign_up', component: RegisterPage, meta: {title: 'Register', public: true}},
+  // OAuth2 / external auth — rendered by login page; exact paths kept for
+  // direct-link support (the page handles the provider param).
+  {path: '/user/oauth2/:provider', component: LoginPage, meta: {title: 'Sign In', public: true}},
+  {path: '/user/oauth2/:provider/callback', component: LoginPage, meta: {title: 'Sign In', public: true}},
+  // Account activation & password reset
+  {path: '/user/activate', component: LoginPage, meta: {title: 'Activate Account', public: true}},
+  {path: '/user/forgot_password', component: LoginPage, meta: {title: 'Forgot Password', public: true}},
+  {path: '/user/reset_password', component: LoginPage, meta: {title: 'Reset Password', public: true}},
 
-  // User settings
+  // ── User settings ─────────────────────────────────────────────────────────
   {path: '/user/settings', component: UserSettingsPage, meta: {title: 'Settings'}},
   {path: '/user/settings/:tab', component: UserSettingsPage, meta: {title: 'Settings'}},
 
-  // User issues/pulls/milestones dashboard
+  // ── User dashboard (issues / pulls / milestones) ──────────────────────────
   {path: '/issues', component: UserIssuesPage, meta: {title: 'Issues'}},
+  {path: '/issues/:type(your_repositories|assigned|mentioned)', component: UserIssuesPage, meta: {title: 'Issues'}},
   {path: '/pulls', component: UserIssuesPage, meta: {title: 'Pull Requests'}},
   {path: '/milestones', component: UserIssuesPage, meta: {title: 'Milestones'}},
 
-  // Notifications
+  // ── Notifications ─────────────────────────────────────────────────────────
   {path: '/notifications', component: NotificationsPage, meta: {title: 'Notifications'}},
   {path: '/notifications/subscriptions', component: NotificationsPage, meta: {title: 'Subscriptions'}},
   {path: '/notifications/watching', component: NotificationsPage, meta: {title: 'Watching'}},
 
-  // Repository routes — must come before /:username
+  // ── Repository creation ───────────────────────────────────────────────────
+  {path: '/repo/create', component: RepoOverviewPage, meta: {title: 'New Repository'}},
+  {path: '/repo/migrate', component: RepoOverviewPage, meta: {title: 'Migrate Repository'}},
+
+  // ── Organisation ──────────────────────────────────────────────────────────
+  {path: '/org/create', component: UserProfilePage, meta: {title: 'New Organisation'}},
+  {path: '/org/:org/members', component: UserProfilePage, meta: {title: 'Organisation Members'}},
+  {path: '/org/:org/teams', component: UserProfilePage, meta: {title: 'Teams'}},
+  {path: '/org/:org/teams/:team', component: UserProfilePage, meta: {title: 'Team'}},
+
+  // ── Site-admin (/-/admin/…) ───────────────────────────────────────────────
+  {path: '/-/admin', component: AdminPage, meta: {title: 'Administration'}},
+  {path: '/-/admin/:section', component: AdminPage, meta: {title: 'Administration'}},
+  {path: '/-/admin/:section/:subsection', component: AdminPage, meta: {title: 'Administration'}},
+  {path: '/-/admin/:section/:subsection/:action', component: AdminPage, meta: {title: 'Administration'}},
+
+  // ── Repository routes ─────────────────────────────────────────────────────
+  // Must appear BEFORE the /:username catch-all.
+
+  // Overview
   {path: '/:owner/:repo', component: RepoOverviewPage, meta: {title: 'Repository'}},
+
+  // Issues
   {path: '/:owner/:repo/issues', component: IssueListPage, meta: {title: 'Issues'}},
   {path: '/:owner/:repo/issues/new', component: NewIssuePage, meta: {title: 'New Issue'}},
-  {path: '/:owner/:repo/issues/:id', component: IssueDetailPage, meta: {title: 'Issue'}},
-  {path: '/:owner/:repo/pulls', component: PullRequestListPage, meta: {title: 'Pull Requests'}},
-  {path: '/:owner/:repo/pulls/:index', component: IssueDetailPage, meta: {title: 'Pull Request'}},
+  {path: '/:owner/:repo/issues/:index(\\d+)', component: IssueDetailPage, meta: {title: 'Issue'}},
+  {path: '/:owner/:repo/issues/:index(\\d+)/edit', component: IssueDetailPage, meta: {title: 'Edit Issue'}},
 
-  // Repo source browser
+  // Pull requests
+  {path: '/:owner/:repo/pulls', component: PullRequestListPage, meta: {title: 'Pull Requests'}},
+  {path: '/:owner/:repo/pulls/:index(\\d+)', component: IssueDetailPage, meta: {title: 'Pull Request'}},
+  {path: '/:owner/:repo/compare/:pathMatch(.*)', component: IssueDetailPage, meta: {title: 'Compare'}},
+
+  // Source / file browser — two variants: with and without a trailing file path.
+  // :refType is 'branch', 'tag', or 'commit'.
   {path: '/:owner/:repo/src/:refType/:ref', component: RepoSourcePage, meta: {title: 'Source'}},
   {path: '/:owner/:repo/src/:refType/:ref/:pathMatch(.*)', component: RepoSourcePage, meta: {title: 'Source'}},
 
-  // Repo commits
-  {path: '/:owner/:repo/commits/:refType/:ref', component: RepoCommitsPage, meta: {title: 'Commits'}},
+  // Blame
+  {path: '/:owner/:repo/blame/:refType/:ref/:pathMatch(.*)', component: RepoSourcePage, meta: {title: 'Blame'}},
 
-  // Repo branches
+  // Commits
+  {path: '/:owner/:repo/commits/:refType/:ref', component: RepoCommitsPage, meta: {title: 'Commits'}},
+  {path: '/:owner/:repo/commits/:refType/:ref/:pathMatch(.*)', component: RepoCommitsPage, meta: {title: 'Commits'}},
+  {path: '/:owner/:repo/commit/:sha', component: RepoCommitsPage, meta: {title: 'Commit'}},
+
+  // Branches
   {path: '/:owner/:repo/branches', component: RepoBranchesPage, meta: {title: 'Branches'}},
 
-  // Repo releases
+  // Releases & tags
   {path: '/:owner/:repo/releases', component: RepoReleasesPage, meta: {title: 'Releases'}},
   {path: '/:owner/:repo/releases/tag/:tag', component: RepoReleasesPage, meta: {title: 'Release'}},
   {path: '/:owner/:repo/releases/latest', component: RepoReleasesPage, meta: {title: 'Latest Release'}},
-
-  // Repo tags
+  {path: '/:owner/:repo/releases/new', component: RepoReleasesPage, meta: {title: 'New Release'}},
+  {path: '/:owner/:repo/releases/edit/:tag', component: RepoReleasesPage, meta: {title: 'Edit Release'}},
   {path: '/:owner/:repo/tags', component: RepoTagsPage, meta: {title: 'Tags'}},
 
-  // Repo wiki
+  // Wiki
   {path: '/:owner/:repo/wiki', component: RepoWikiPage, meta: {title: 'Wiki'}},
   {path: '/:owner/:repo/wiki/:pathMatch(.*)', component: RepoWikiPage, meta: {title: 'Wiki'}},
 
-  // Repo activity
+  // Activity / pulse
   {path: '/:owner/:repo/activity', component: RepoActivityPage, meta: {title: 'Activity'}},
   {path: '/:owner/:repo/activity/:period', component: RepoActivityPage, meta: {title: 'Activity'}},
+  {path: '/:owner/:repo/pulse', component: RepoActivityPage, meta: {title: 'Activity'}},
+  {path: '/:owner/:repo/pulse/:period', component: RepoActivityPage, meta: {title: 'Activity'}},
 
-  // User / org profile — comes after repo routes so /:owner/:repo wins
+  // Graphs
+  {path: '/:owner/:repo/graphs/:graph', component: RepoActivityPage, meta: {title: 'Graph'}},
+
+  // Repository settings
+  {path: '/:owner/:repo/settings', component: RepoOverviewPage, meta: {title: 'Settings'}},
+  {path: '/:owner/:repo/settings/:tab', component: RepoOverviewPage, meta: {title: 'Settings'}},
+
+  // ── User / org profile — LAST dynamic single-segment path ─────────────────
   {path: '/:username', component: UserProfilePage, meta: {title: 'Profile', public: true}},
 
-  // 404 catch-all
+  // ── 404 catch-all ─────────────────────────────────────────────────────────
   {path: '/:pathMatch(.*)*', component: NotFoundPage, meta: {title: 'Page Not Found', public: true}},
 ];
 
@@ -100,15 +164,12 @@ export const router = createRouter({
   },
 });
 
-// Capture the application name once at startup. The initial page title has the
-// form "Page Title - AppName"; if there's no separator, the whole string is used.
+// Capture the application name once at startup.
 const titleParts = document.title.split(' - ');
 const appName = titleParts.at(-1) ?? titleParts[0] ?? 'Gitea';
 
-// Update document title on route change
+// Update document title on every navigation.
 router.afterEach((to) => {
   const title = to.meta.title as string | undefined;
-  if (title) {
-    document.title = `${title} - ${appName}`;
-  }
+  if (title) document.title = `${title} - ${appName}`;
 });

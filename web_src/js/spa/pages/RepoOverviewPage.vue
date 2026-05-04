@@ -39,32 +39,44 @@
 
       <!-- Stats bar -->
       <div class="tw-flex tw-items-center tw-gap-4 tw-text-sm tw-mb-6">
-        <a :href="`${appSubUrl}/${owner}/${repoName}/stargazers`" class="tw-flex tw-items-center tw-gap-1 hover:tw-text-blue-600">
+        <RouterLink :to="`/${owner}/${repoName}/stargazers`" class="tw-flex tw-items-center tw-gap-1 hover:tw-text-blue-600">
           <span>⭐</span> <span class="tw-font-medium">{{ repo.stars_count }}</span> Stars
-        </a>
-        <a :href="`${appSubUrl}/${owner}/${repoName}/forks`" class="tw-flex tw-items-center tw-gap-1 hover:tw-text-blue-600">
+        </RouterLink>
+        <RouterLink :to="`/${owner}/${repoName}/forks`" class="tw-flex tw-items-center tw-gap-1 hover:tw-text-blue-600">
           <span>🍴</span> <span class="tw-font-medium">{{ repo.forks_count }}</span> Forks
-        </a>
+        </RouterLink>
         <RouterLink :to="`/${owner}/${repoName}/issues`" class="tw-flex tw-items-center tw-gap-1 hover:tw-text-blue-600">
           <span>🔴</span> <span class="tw-font-medium">{{ repo.open_issues_count }}</span> Issues
         </RouterLink>
       </div>
 
       <!-- Clone URL bar -->
-      <div class="ui input fluid tw-mb-6 tw-flex tw-items-center tw-gap-2">
-        <input
-          type="text"
-          :value="repo.clone_url"
-          readonly
-          class="tw-flex-1 tw-border tw-rounded tw-px-3 tw-py-1 tw-text-sm tw-font-mono tw-bg-gray-50"
-          @focus="($event.target as HTMLInputElement).select()"
-        >
-        <a
-          :href="`${appSubUrl}/${owner}/${repoName}`"
-          class="ui small button"
-        >
-          Open Full View
-        </a>
+      <div class="tw-mb-6">
+        <div class="tw-flex tw-items-center tw-gap-2 tw-mb-2">
+          <span class="tw-text-sm tw-font-medium tw-text-gray-600">Clone</span>
+        </div>
+        <div class="tw-flex tw-flex-col tw-gap-1">
+          <div class="tw-flex tw-items-center tw-gap-2">
+            <span class="tw-text-xs tw-text-gray-500 tw-w-8">HTTPS</span>
+            <input
+              type="text"
+              :value="httpCloneUrl"
+              readonly
+              class="tw-flex-1 tw-border tw-rounded tw-px-3 tw-py-1 tw-text-sm tw-font-mono tw-bg-gray-50"
+              @focus="($event.target as HTMLInputElement).select()"
+            >
+          </div>
+          <div v-if="sshCloneUrl" class="tw-flex tw-items-center tw-gap-2">
+            <span class="tw-text-xs tw-text-gray-500 tw-w-8">SSH</span>
+            <input
+              type="text"
+              :value="sshCloneUrl"
+              readonly
+              class="tw-flex-1 tw-border tw-rounded tw-px-3 tw-py-1 tw-text-sm tw-font-mono tw-bg-gray-50"
+              @focus="($event.target as HTMLInputElement).select()"
+            >
+          </div>
+        </div>
       </div>
 
       <!-- File browser -->
@@ -129,7 +141,7 @@
 </template>
 
 <script setup lang="ts">
-import {ref, onMounted} from 'vue';
+import {ref, computed, onMounted} from 'vue';
 import {RouterLink, useRoute} from 'vue-router';
 import AppLayout from '../layouts/AppLayout.vue';
 import {
@@ -138,7 +150,7 @@ import {
   type Repository, type Issue, type ContentsResponse, type User,
 } from '../api/index.ts';
 
-import {appSubUrl} from '../spaconfig.ts';
+import {appSubUrl, rewriteToBackend} from '../spaconfig.ts';
 
 const route = useRoute();
 const owner = String(route.params.owner);
@@ -160,10 +172,15 @@ const issues = ref<Issue[]>([]);
 const starred = ref(false);
 const starLoading = ref(false);
 
-/** Returns the browse URL for a repository content item (file or directory). */
+/** HTTP clone URL rewritten to the configured backend origin. */
+const httpCloneUrl = computed(() => rewriteToBackend(repo.value?.clone_url ?? ''));
+/** SSH clone URL (always points to the backend; no rewriting needed). */
+const sshCloneUrl = computed(() => repo.value?.ssh_url ?? '');
+
+/** Returns the SPA router path for a repository content item (file or dir). */
 function contentItemUrl(item: ContentsResponse): string {
   const branch = repo.value?.default_branch ?? 'HEAD';
-  return `${appSubUrl}/${owner}/${repoName}/src/branch/${branch}/${item.path}`;
+  return `/${owner}/${repoName}/src/branch/${branch}/${item.path}`;
 }
 
 async function toggleStar() {

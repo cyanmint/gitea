@@ -311,6 +311,29 @@ func Routes() *web.Router {
 	mid = append(mid, common.BlockExpensive(), common.QoS(), web.RouterMockPoint(RouterMockPointBeforeWebRoutes))
 
 	webRoutes := web.NewRouter()
+	// Disable all web HTML-form handlers.  All mutations must now go through the
+	// REST API at /api/v1/.  Requests carrying a form-encoded or multipart body
+	// are rejected immediately so that legacy form submissions surface as a clear
+	// error instead of silently misbehaving.
+	//
+	// Git smart-HTTP protocol (Content-Type: application/x-git-*) and JSON
+	// API calls do not use form-encoded bodies, so they are unaffected.
+	webRoutes.BeforeRouting(func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			m := r.Method
+			if m != http.MethodGet && m != http.MethodHead && m != http.MethodOptions {
+				ct := r.Header.Get("Content-Type")
+				if strings.HasPrefix(ct, "application/x-www-form-urlencoded") ||
+					strings.HasPrefix(ct, "multipart/form-data") {
+					w.Header().Set("Content-Type", "application/json; charset=utf-8")
+					w.WriteHeader(http.StatusMethodNotAllowed)
+					_, _ = w.Write([]byte(`{"message":"web form handlers are disabled; use the REST API at /api/v1/"}`))
+					return
+				}
+			}
+			next.ServeHTTP(w, r)
+		})
+	})
 	webRoutes.AfterRouting(mid...)
 	registerWebRoutes(webRoutes, webAuth)
 

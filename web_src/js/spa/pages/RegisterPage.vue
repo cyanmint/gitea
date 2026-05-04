@@ -99,9 +99,8 @@
 import {ref} from 'vue';
 import {RouterLink} from 'vue-router';
 import AppLayout from '../layouts/AppLayout.vue';
-import {POST} from '../../modules/fetch.ts';
-
-import {appSubUrl} from '../spaconfig.ts';
+import {login} from '../api/index.ts';
+import {apiBase} from '../spaconfig.ts';
 
 const form = ref({
   username: '',
@@ -116,7 +115,6 @@ const successMessage = ref('');
 const fieldErrors = ref<Record<string, string>>({});
 
 async function handleRegister() {
-  // Client-side validation
   fieldErrors.value = {};
   if (form.value.password !== form.value.retype) {
     fieldErrors.value.retype = 'Passwords do not match.';
@@ -131,23 +129,35 @@ async function handleRegister() {
   errorMessage.value = '';
 
   try {
-    // Submit to the existing Go registration endpoint which expects a form POST
-    const body = new URLSearchParams({
-      user_name: form.value.username,
-      email: form.value.email,
-      password: form.value.password,
-      retype: form.value.retype,
-    });
-    const resp = await POST(`${appSubUrl}/user/sign_up`, {
-      headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-      data: body.toString(),
+    const resp = await fetch(`${apiBase}/user/register`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        username: form.value.username,
+        email: form.value.email,
+        password: form.value.password,
+      }),
     });
 
-    if (resp.ok || resp.redirected) {
-      // Go handler redirects to dashboard on success
-      successMessage.value = 'Account created! You can now sign in.';
+    if (resp.status === 201) {
+      // Registration succeeded — sign in automatically.
+      try {
+        await login(form.value.username, form.value.password);
+        window.location.href = window.location.pathname;
+      } catch {
+        successMessage.value = 'Account created! You can now sign in.';
+      }
+      return;
+    }
+
+    const body = await resp.json().catch(() => ({}));
+    const msg: string = body.message ?? body.error ?? '';
+    if (msg.toLowerCase().includes('already exist') || msg.toLowerCase().includes('already used')) {
+      errorMessage.value = 'Username or email is already taken.';
+    } else if (msg.toLowerCase().includes('disabled') || resp.status === 403) {
+      errorMessage.value = 'Registration is disabled on this server.';
     } else {
-      errorMessage.value = 'Registration failed. The username or email may already be taken.';
+      errorMessage.value = msg || 'Registration failed. Please try again.';
     }
   } catch {
     errorMessage.value = 'Network error. Please try again.';

@@ -39,12 +39,6 @@
                 >
               </div>
             </div>
-            <div class="field">
-              <div class="ui checkbox">
-                <input v-model="remember" type="checkbox" name="remember" id="remember">
-                <label for="remember">Remember me</label>
-              </div>
-            </div>
             <button class="ui fluid large teal submit button" type="submit" :disabled="loading">
               <span v-if="loading">Signing in…</span>
               <span v-else>Sign In</span>
@@ -63,15 +57,14 @@
 
 <script setup lang="ts">
 import {ref} from 'vue';
-import {RouterLink} from 'vue-router';
+import {RouterLink, useRouter} from 'vue-router';
 import AppLayout from '../layouts/AppLayout.vue';
-import {POST} from '../../modules/fetch.ts';
+import {login} from '../api/index.ts';
+import {assetUrlPrefix} from '../spaconfig.ts';
 
-import {appSubUrl, assetUrlPrefix} from '../spaconfig.ts';
-
+const router = useRouter();
 const username = ref('');
 const password = ref('');
-const remember = ref(false);
 const loading = ref(false);
 const error = ref('');
 
@@ -79,25 +72,11 @@ async function handleLogin() {
   loading.value = true;
   error.value = '';
   try {
-    const body = new URLSearchParams({
-      user_name: username.value,
-      password: password.value,
-      ...(remember.value && {remember: 'on'}),
-    });
-    const resp = await POST(`${appSubUrl}/user/login`, {
-      headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-      data: body,
-    });
-    // The server redirects on success and returns HTML on failure.
-    // resp.redirected is true when the browser followed a redirect.
-    if (resp.redirected && !resp.url.includes('/user/login')) {
-      // Hard-navigate so the new session cookie is fully active.
-      window.location.href = resp.url;
-    } else {
-      error.value = 'Invalid username or password.';
-    }
-  } catch {
-    error.value = 'Network error. Please try again.';
+    await login(username.value, password.value);
+    // Full navigation to home after login so the navbar re-fetches auth state.
+    window.location.href = window.location.pathname;
+  } catch (e) {
+    error.value = e instanceof Error ? e.message : 'Login failed. Please try again.';
   } finally {
     loading.value = false;
   }
