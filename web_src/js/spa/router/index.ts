@@ -1,4 +1,5 @@
-import {createRouter, createWebHistory, type RouteRecordRaw} from 'vue-router';
+import {createRouter, type RouteRecordRaw} from 'vue-router';
+import {createQueryHistory} from './queryHistory.ts';
 import HomePage from '../pages/HomePage.vue';
 import ExplorePage from '../pages/ExplorePage.vue';
 import LoginPage from '../pages/LoginPage.vue';
@@ -20,8 +21,6 @@ import RepoTagsPage from '../pages/RepoTagsPage.vue';
 import RepoWikiPage from '../pages/RepoWikiPage.vue';
 import RepoActivityPage from '../pages/RepoActivityPage.vue';
 import NotFoundPage from '../pages/NotFoundPage.vue';
-
-const {appSubUrl} = window.config;
 
 const routes: RouteRecordRaw[] = [
   // Home / dashboard
@@ -93,7 +92,7 @@ const routes: RouteRecordRaw[] = [
 ];
 
 export const router = createRouter({
-  history: createWebHistory(appSubUrl || '/'),
+  history: createQueryHistory(),
   routes,
   scrollBehavior(_to, _from, savedPosition) {
     if (savedPosition) return savedPosition;

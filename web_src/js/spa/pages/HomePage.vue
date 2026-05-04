@@ -75,7 +75,7 @@ import {RouterLink} from 'vue-router';
 import AppLayout from '../layouts/AppLayout.vue';
 import {getCurrentUser, searchRepos, type User, type Repository} from '../api/index.ts';
 
-const {appSubUrl, assetUrlPrefix} = window.config;
+import {appSubUrl, assetUrlPrefix} from '../spaconfig.ts';
 
 const loading = ref(true);
 const reposLoading = ref(false);

@@ -1,0 +1,76 @@
+name: Deploy Frontend to GitHub Pages
+
+on:
+  push:
+    branches:
+      - main
+      - master
+    paths:
+      - 'web_src/js/spa/**'
+      - 'web_src/css/**'
+      - 'tailwind.config.ts'
+      - 'vite.frontend.config.ts'
+      - 'frontend/**'
+      - 'pnpm-lock.yaml'
+      - '.github/workflows/deploy-frontend.yml'
+  # Allow manual triggering
+  workflow_dispatch:
+    inputs:
+      api_url:
+        description: 'Default Gitea API server URL (e.g. https://gitea.example.com)'
+        required: false
+        default: ''
+
+# Allow only one deployment at a time
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build SPA
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build standalone SPA
+        env:
+          # Use the workflow_dispatch input, fall back to the repository variable,
+          # or leave empty to bundle no default (users configure via localStorage).
+          VITE_DEFAULT_API_URL: ${{ inputs.api_url || vars.GITEA_API_URL || '' }}
+          NODE_ENV: production
+        run: pnpm exec vite build --config vite.frontend.config.ts
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          # Vite places the HTML in frontend-dist/frontend/ (mirrors the input path)
+          path: frontend-dist/frontend
+
+  deploy:
+    name: Deploy to GitHub Pages
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deploy
+        uses: actions/deploy-pages@v4

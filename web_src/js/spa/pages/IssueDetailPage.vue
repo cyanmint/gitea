@@ -133,7 +133,7 @@ import {RouterLink, useRoute} from 'vue-router';
 import AppLayout from '../layouts/AppLayout.vue';
 import {getIssue, getIssueComments, getCurrentUser, createIssueComment, type Issue, type Comment, type User} from '../api/index.ts';
 
-const {appSubUrl} = window.config;
+import {appSubUrl} from '../spaconfig.ts';
 
 const route = useRoute();
 const owner = String(route.params.owner);

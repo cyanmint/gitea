@@ -62,7 +62,7 @@ import AppLayout from '../layouts/AppLayout.vue';
 import {getRepo, type Repository} from '../api/index.ts';
 
 const route = useRoute();
-const {appSubUrl} = window.config;
+import {appSubUrl} from '../spaconfig.ts';
 
 const owner = computed(() => route.params.owner as string);
 const repoName = computed(() => route.params.repo as string);

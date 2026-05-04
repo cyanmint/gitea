@@ -81,10 +81,10 @@ cpu.out
 /public/assets/css
 /public/assets/fonts
 /public/assets/licenses.txt
+/frontend-dist
 /vendor
 /VERSION
 /.air
-
 
 # Snapcraft
 /gitea_a*.txt

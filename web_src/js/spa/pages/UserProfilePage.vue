@@ -105,7 +105,7 @@ import {RouterLink, useRoute} from 'vue-router';
 import AppLayout from '../layouts/AppLayout.vue';
 import {getUser, getUserRepos, getUserOrgs, type User, type Repository} from '../api/index.ts';
 
-const {appSubUrl} = window.config;
+import {appSubUrl} from '../spaconfig.ts';
 
 const route = useRoute();
 const username = String(route.params.username);

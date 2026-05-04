@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gitea</title>
+  <!--
+    Standalone Gitea SPA — deployed to GitHub Pages (or any static host).
+
+    By default the SPA talks to the Gitea API server whose URL was embedded at
+    build time via the VITE_DEFAULT_API_URL environment variable.
+
+    To point the frontend at a different server after deployment, open your
+    browser DevTools console and run:
+
+        localStorage.setItem('gitea-api-url', 'https://your-gitea-server.example.com')
+        location.reload()
+  -->
+</head>
+<body>
+  <div id="app"></div>
+  <!-- Entry script is resolved from the project root by vite.frontend.config.ts -->
+  <script type="module" src="/web_src/js/spa/main.ts"></script>
+</body>
+</html>

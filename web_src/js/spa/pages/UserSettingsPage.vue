@@ -81,21 +81,21 @@ import {ref, computed, onMounted} from 'vue';
 import {useRoute, RouterLink} from 'vue-router';
 import AppLayout from '../layouts/AppLayout.vue';
 import {GET, PATCH} from '../../modules/fetch.ts';
+import {appSubUrl, apiBase} from '../spaconfig.ts';
 
 const route = useRoute();
-const {appSubUrl} = window.config;
 const loading = ref(false);
 const error = ref<string | null>(null);
 const saveSuccess = ref(false);
 
 const tabs = [
-  {path: `${appSubUrl}/user/settings`, label: 'Profile', key: 'profile'},
-  {path: `${appSubUrl}/user/settings/account`, label: 'Account', key: 'account'},
-  {path: `${appSubUrl}/user/settings/appearance`, label: 'Appearance', key: 'appearance'},
-  {path: `${appSubUrl}/user/settings/notifications`, label: 'Notifications', key: 'notifications'},
-  {path: `${appSubUrl}/user/settings/security`, label: 'Security', key: 'security'},
-  {path: `${appSubUrl}/user/settings/applications`, label: 'Applications', key: 'applications'},
-  {path: `${appSubUrl}/user/settings/keys`, label: 'SSH/GPG Keys', key: 'keys'},
+  {path: '/user/settings', label: 'Profile', key: 'profile'},
+  {path: '/user/settings/account', label: 'Account', key: 'account'},
+  {path: '/user/settings/appearance', label: 'Appearance', key: 'appearance'},
+  {path: '/user/settings/notifications', label: 'Notifications', key: 'notifications'},
+  {path: '/user/settings/security', label: 'Security', key: 'security'},
+  {path: '/user/settings/applications', label: 'Applications', key: 'applications'},
+  {path: '/user/settings/keys', label: 'SSH/GPG Keys', key: 'keys'},
 ];
 
 const activeTab = computed(() => {
@@ -132,7 +132,7 @@ async function loadProfile() {
   loading.value = true;
   error.value = null;
   try {
-    const resp = await GET(`${appSubUrl}/api/v1/user/settings`);
+    const resp = await GET(`${apiBase}/user/settings`);
     if (!resp.ok) throw new Error(`Failed to load settings: ${resp.status}`);
     const data = await resp.json() as UserSettings;
     profile.value = {
@@ -152,7 +152,7 @@ async function loadProfile() {
 async function saveProfile() {
   saveSuccess.value = false;
   try {
-    const resp = await PATCH(`${appSubUrl}/api/v1/user/settings`, {data: profile.value});
+    const resp = await PATCH(`${apiBase}/user/settings`, {data: profile.value});
     if (!resp.ok) throw new Error(`Save failed: ${resp.status}`);
     saveSuccess.value = true;
   } catch (e) {

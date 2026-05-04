@@ -138,7 +138,7 @@ import {
   type Repository, type Issue, type ContentsResponse, type User,
 } from '../api/index.ts';
 
-const {appSubUrl} = window.config;
+import {appSubUrl} from '../spaconfig.ts';
 
 const route = useRoute();
 const owner = String(route.params.owner);

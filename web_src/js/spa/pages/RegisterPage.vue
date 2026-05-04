@@ -101,7 +101,7 @@ import {RouterLink} from 'vue-router';
 import AppLayout from '../layouts/AppLayout.vue';
 import {POST} from '../../modules/fetch.ts';
 
-const {appSubUrl} = window.config;
+import {appSubUrl} from '../spaconfig.ts';
 
 const form = ref({
   username: '',

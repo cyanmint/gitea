@@ -106,7 +106,7 @@ import {RouterLink, useRoute} from 'vue-router';
 import AppLayout from '../layouts/AppLayout.vue';
 import {getRepoIssues, getRepoIssueCount, getCurrentUser, type Issue, type User} from '../api/index.ts';
 
-const {appSubUrl} = window.config;
+import {appSubUrl} from '../spaconfig.ts';
 
 const route = useRoute();
 const owner = String(route.params.owner);

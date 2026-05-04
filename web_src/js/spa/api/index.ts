@@ -1,9 +1,5 @@
 import {GET, POST, PATCH, PUT, DELETE} from '../../modules/fetch.ts';
-
-const {appSubUrl} = window.config;
-
-// Base API URL prefix
-const apiBase = `${appSubUrl}/api/v1`;
+import {apiBase} from '../spaconfig.ts';
 
 // ---- Shared types (subset of Gitea API v1 swagger) ----
 

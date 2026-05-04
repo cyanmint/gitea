@@ -67,7 +67,7 @@ import {RouterLink} from 'vue-router';
 import AppLayout from '../layouts/AppLayout.vue';
 import {POST} from '../../modules/fetch.ts';
 
-const {appSubUrl, assetUrlPrefix} = window.config;
+import {appSubUrl, assetUrlPrefix} from '../spaconfig.ts';
 
 const username = ref('');
 const password = ref('');
