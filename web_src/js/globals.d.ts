@@ -19,6 +19,13 @@ interface Element {
 }
 
 interface Window {
+  /**
+   * Runtime configuration injected by the Go template in embedded (Gitea-served)
+   * mode.  In standalone (GitHub Pages) mode this is initialised with empty
+   * defaults by main.ts before the Vue app mounts, so it may briefly be
+   * undefined during module evaluation — access it through `spaconfig.ts`
+   * helpers rather than directly.
+   */
   config: {
     appUrl: string,
     appSubUrl: string,

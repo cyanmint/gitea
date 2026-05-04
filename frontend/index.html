@@ -16,6 +16,28 @@
         localStorage.setItem('gitea-api-url', 'https://your-gitea-server.example.com')
         location.reload()
   -->
+
+  <!--
+    Initialise window.config with empty defaults for standalone mode.
+    This mirrors what the Gitea Go template injects in embedded mode and must
+    run synchronously before any ES modules are evaluated.
+  -->
+  <script>
+    window.config = {
+      appUrl: '',
+      appSubUrl: '',
+      assetUrlPrefix: '',
+      sharedWorkerUri: '',
+      runModeIsProd: true,
+      customEmojis: {},
+      pageData: {},
+      notificationSettings: {MinTimeout: 10000, TimeoutStep: 10000, MaxTimeout: 300000, EventSourceUpdateTime: 10000},
+      enableTimeTracking: false,
+      mermaidMaxSourceCharacters: 5000,
+      i18n: {},
+      frontendInited: false,
+    };
+  </script>
 </head>
 <body>
   <div id="app"></div>

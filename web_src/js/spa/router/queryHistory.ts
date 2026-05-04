@@ -46,7 +46,7 @@ export function createQueryHistory(): RouterHistory {
     const prev = currentPath;
     currentPath = newPath;
     const info = {delta: 0, type: 'pop', direction: ''} as unknown as NavigationInfo;
-    callbacks.forEach((cb) => cb(newPath, prev, info));
+    for (const cb of callbacks) cb(newPath, prev, info);
   }
 
   window.addEventListener('popstate', onPopState);

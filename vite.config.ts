@@ -18,21 +18,23 @@ function globSync(pattern: string, opts: {cwd: string}): string[] {
   if (pattern.startsWith('{')) {
     const match = /^\{([^}]+)\}\/(.+)$/.exec(pattern);
     if (match) {
-      return match[1].split(',').flatMap(p => globSync(`${p}/${match[2]}`, opts));
+      return match[1].split(',').flatMap((p) => globSync(`${p}/${match[2]}`, opts));
     }
     return [];
   }
   const slashIdx = pattern.lastIndexOf('/');
   const dir = slashIdx >= 0 ? pattern.slice(0, slashIdx) : '.';
   const filePattern = slashIdx >= 0 ? pattern.slice(slashIdx + 1) : pattern;
-  // Build a safe regex: escape all special chars then replace \* with .*
+  // Build a safe regex: escape backslash first, then all other regex special
+  // characters (except * which is converted to .*).
   const reStr = filePattern
+    .replace(/\\/g, '\\\\')
     .replace(/[$()+.?[\]^{|}]/g, '\\$&')
     .replace(/\*/g, '.*');
   const re = new RegExp(`^${reStr}$`);
   try {
     const files = readdirSync(join(cwd, dir));
-    return files.filter(f => re.test(f)).map(f => dir === '.' ? f : `${dir}/${f}`);
+    return files.filter((f) => re.test(f)).map((f) => dir === '.' ? f : `${dir}/${f}`);
   } catch {
     return [];
   }

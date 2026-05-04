@@ -6,19 +6,20 @@
 //   Standalone: SPA deployed to GitHub Pages (or any static host).
 //               VITE_DEFAULT_API_URL is set at build time to point to the
 //               Gitea server; window.config is initialised to empty defaults
-//               by the standalone entry HTML.
+//               by the standalone entry HTML synchronous <script> block.
 
 // Build-time API URL injected via VITE_DEFAULT_API_URL env-var.
 // Empty string when building in embedded (normal Gitea) mode.
 const buildApiUrl: string = import.meta.env['VITE_DEFAULT_API_URL'] ?? '';
 
-// Safely read window.config which may be absent in standalone mode.
-function wConfig() {
-  return (window as any).config as typeof window.config | undefined;
-}
+// In embedded mode window.config is populated by the Go template before any JS
+// runs.  In standalone mode the entry HTML initialises window.config with
+// empty defaults via a synchronous <script> block before any ES modules load,
+// so the access is always safe.
+const cfg = window.config;
 
 /** True when the SPA was built for standalone GitHub Pages deployment. */
-export const isStandalone: boolean = !!buildApiUrl;
+export const isStandalone: boolean = Boolean(buildApiUrl);
 
 /**
  * Base URL of the Gitea instance, WITHOUT a trailing slash.
@@ -26,9 +27,9 @@ export const isStandalone: boolean = !!buildApiUrl;
  *   embedded  →  '' (same origin)
  *   standalone →  'https://gitea.example.com'
  */
-export const appSubUrl: string = buildApiUrl
-  ? buildApiUrl.replace(/\/$/, '')
-  : (wConfig()?.appSubUrl ?? '');
+export const appSubUrl: string = buildApiUrl ?
+  buildApiUrl.replace(/\/$/, '') :
+  cfg.appSubUrl;
 
 /**
  * Base URL for all Gitea REST-API v1 calls.
@@ -44,6 +45,6 @@ export const apiBase: string = `${appSubUrl}/api/v1`;
  * assets are bundled into the frontend itself so the prefix is empty
  * (relative URLs work).
  */
-export const assetUrlPrefix: string = buildApiUrl
-  ? ''
-  : (wConfig()?.assetUrlPrefix ?? '');
+export const assetUrlPrefix: string = buildApiUrl ?
+  '' :
+  cfg.assetUrlPrefix;
