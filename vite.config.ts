@@ -10,12 +10,13 @@ import tailwindConfig from './tailwind.config.ts';
 import type {InlineConfig, Plugin, Rolldown} from 'vite';
 import {camelize} from 'vue';
 
-// Polyfill for globSync using readdirSync (Node 20 compatibility)
+// Polyfill for globSync using readdirSync (Node 20 compatibility — node:fs globSync requires Node 22+).
+// Supports patterns used in this config: 'dir/*.ext', 'dir/*.ext*', '{a,b}/pattern'
 function globSync(pattern: string, opts: {cwd: string}): string[] {
   const {cwd} = opts;
-  // Support simple patterns like 'dir/*.ext' and 'dir/*.ext*' and '{a,b}/*.ext'
+  // Handle brace expansion: {a,b}/rest
   if (pattern.startsWith('{')) {
-    const match = pattern.match(/^\{([^}]+)\}\/(.+)$/);
+    const match = /^\{([^}]+)\}\/(.+)$/.exec(pattern);
     if (match) {
       return match[1].split(',').flatMap(p => globSync(`${p}/${match[2]}`, opts));
     }
@@ -24,7 +25,11 @@ function globSync(pattern: string, opts: {cwd: string}): string[] {
   const slashIdx = pattern.lastIndexOf('/');
   const dir = slashIdx >= 0 ? pattern.slice(0, slashIdx) : '.';
   const filePattern = slashIdx >= 0 ? pattern.slice(slashIdx + 1) : pattern;
-  const re = new RegExp(`^${filePattern.replace(/\./g, '\\.').replace(/\*/g, '.*')}$`);
+  // Build a safe regex: escape all special chars then replace \* with .*
+  const reStr = filePattern
+    .replace(/[$()+.?[\]^{|}]/g, '\\$&')
+    .replace(/\*/g, '.*');
+  const re = new RegExp(`^${reStr}$`);
   try {
     const files = readdirSync(join(cwd, dir));
     return files.filter(f => re.test(f)).map(f => dir === '.' ? f : `${dir}/${f}`);
