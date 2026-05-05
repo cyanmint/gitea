@@ -1520,6 +1520,16 @@
         },
         "description": "UserList"
       },
+      "UserActionsPermissions": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/UserActionsPermissions"
+            }
+          }
+        },
+        "description": "UserActionsPermissions"
+      },
       "UserSettings": {
         "content": {
           "application/json": {
@@ -10288,6 +10298,27 @@
         },
         "type": "object",
         "x-go-package": "code.gitea.io/gitea/models/activities"
+      },
+      "UserActionsPermissions": {
+        "description": "UserActionsPermissions holds the Actions permissions for a user or organisation owner.",
+        "properties": {
+          "allowed_cross_repo_ids": {
+            "description": "AllowedCrossRepoIDs is the list of repository IDs allowed for cross-repo access.",
+            "items": {
+              "format": "int64",
+              "type": "integer"
+            },
+            "type": "array",
+            "x-go-name": "AllowedCrossRepoIDs"
+          },
+          "token_permission_mode": {
+            "description": "TokenPermissionMode is the default Actions token permission mode. Possible values: \"permissive\", \"restricted\"",
+            "type": "string",
+            "x-go-name": "TokenPermissionMode"
+          }
+        },
+        "type": "object",
+        "x-go-package": "code.gitea.io/gitea/modules/structs"
       },
       "UserSettings": {
         "description": "UserSettings represents user settings",
@@ -31120,6 +31151,47 @@
         "tags": [
           "user"
         ]
+      }
+    },
+    "/user/actions/permissions": {
+      "get": {
+        "operationId": "userGetActionsPermissions",
+        "summary": "Get the Actions permissions for the authenticated user",
+        "tags": ["user"],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/UserActionsPermissions"
+          },
+          "401": {
+            "$ref": "#/components/responses/unauthorized"
+          }
+        }
+      },
+      "put": {
+        "operationId": "userUpdateActionsPermissions",
+        "summary": "Update the Actions permissions for the authenticated user",
+        "tags": ["user"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserActionsPermissions"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/UserActionsPermissions"
+          },
+          "400": {
+            "$ref": "#/components/responses/error"
+          },
+          "401": {
+            "$ref": "#/components/responses/unauthorized"
+          }
+        }
       }
     },
     "/user/actions/secrets/{secretname}": {

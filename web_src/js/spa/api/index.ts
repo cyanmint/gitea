@@ -72,6 +72,7 @@ export type Repository = {
   updated_at: string;
   owner: User;
   language: string;
+  size: number;
 };
 
 export type Issue = {
@@ -241,8 +242,21 @@ export async function getUserOrgs(username: string): Promise<User[]> {
   return resp.json();
 }
 
+/** An organization (from Gitea API). */
+export type Organization = {
+  id: number;
+  username: string;
+  name?: string;
+  full_name: string;
+  avatar_url: string;
+  description: string;
+  website: string;
+  location: string;
+  visibility: string;
+};
+
 /** List all organizations the authenticated user is a member of (including private). */
-export async function getMyOrgs(): Promise<User[]> {
+export async function getMyOrgs(): Promise<Organization[]> {
   const resp = await GET(`${apiBase}/user/orgs?limit=50`);
   if (!resp.ok) return [];
   return resp.json();
@@ -790,7 +804,8 @@ export async function changePassword(oldPassword: string, newPassword: string): 
     data: {old_password: oldPassword, new_password: newPassword},
   });
   if (!resp.ok) {
-    const body = await resp.json().catch(() => ({message: 'Unknown error'})) as {message: string};
+    let body: {message: string} = {message: 'Unknown error'};
+    try { body = await resp.json() as typeof body; } catch { /* ignore */ }
     throw new Error(body.message ?? `Failed to change password: ${resp.status}`);
   }
 }
@@ -798,7 +813,80 @@ export async function changePassword(oldPassword: string, newPassword: string): 
 export async function deleteSelf(): Promise<void> {
   const resp = await request(`${apiBase}/user`, {method: 'DELETE'});
   if (!resp.ok) {
-    const body = await resp.json().catch(() => ({message: 'Unknown error'})) as {message: string};
+    let body: {message: string} = {message: 'Unknown error'};
+    try { body = await resp.json() as typeof body; } catch { /* ignore */ }
     throw new Error(body.message ?? `Failed to delete account: ${resp.status}`);
   }
+}
+
+// ---- Blocked users ----
+
+export type BlockedUser = User;
+
+export async function listBlockedUsers(page = 1, limit = 50): Promise<BlockedUser[]> {
+  const resp = await GET(`${apiBase}/user/blocks?page=${page}&limit=${limit}`);
+  if (!resp.ok) throw new Error(`Failed to list blocked users: ${resp.status}`);
+  return resp.json() as Promise<BlockedUser[]>;
+}
+
+export async function unblockUser(username: string): Promise<void> {
+  const resp = await DELETE(`${apiBase}/user/blocks/${encodeURIComponent(username)}`);
+  if (!resp.ok) throw new Error(`Failed to unblock user: ${resp.status}`);
+}
+
+// ---- User webhooks ----
+
+export type WebhookConfig = {url?: string; content_type?: string};
+export type Webhook = {
+  id: number;
+  type: string;
+  active: boolean;
+  config: WebhookConfig;
+  events: string[];
+  created: string;
+};
+
+export async function listUserHooks(page = 1, limit = 50): Promise<Webhook[]> {
+  const resp = await GET(`${apiBase}/user/hooks?page=${page}&limit=${limit}`);
+  if (!resp.ok) throw new Error(`Failed to list webhooks: ${resp.status}`);
+  return resp.json() as Promise<Webhook[]>;
+}
+
+export async function createUserHook(url: string, contentType: string, events: string[]): Promise<Webhook> {
+  const resp = await POST(`${apiBase}/user/hooks`, {
+    data: {type: 'gitea', active: true, config: {url, content_type: contentType}, events},
+  });
+  if (!resp.ok) throw new Error(`Failed to create webhook: ${resp.status}`);
+  return resp.json() as Promise<Webhook>;
+}
+
+export async function deleteUserHook(id: number): Promise<void> {
+  const resp = await DELETE(`${apiBase}/user/hooks/${id}`);
+  if (!resp.ok) throw new Error(`Failed to delete webhook: ${resp.status}`);
+}
+
+// ---- Actions permissions ----
+
+export type UserActionsPermissions = {
+  token_permission_mode: string;
+  allowed_cross_repo_ids: number[];
+};
+
+export async function getUserActionsPermissions(): Promise<UserActionsPermissions> {
+  const resp = await GET(`${apiBase}/user/actions/permissions`);
+  if (!resp.ok) throw new Error(`Failed to get actions permissions: ${resp.status}`);
+  return resp.json() as Promise<UserActionsPermissions>;
+}
+
+export async function setUserActionsPermissions(perms: UserActionsPermissions): Promise<UserActionsPermissions> {
+  const resp = await PUT(`${apiBase}/user/actions/permissions`, {data: perms});
+  if (!resp.ok) throw new Error(`Failed to update actions permissions: ${resp.status}`);
+  return resp.json() as Promise<UserActionsPermissions>;
+}
+
+// ---- Leave organization ----
+
+export async function leaveOrganization(orgName: string, username: string): Promise<void> {
+  const resp = await DELETE(`${apiBase}/orgs/${encodeURIComponent(orgName)}/members/${encodeURIComponent(username)}`);
+  if (!resp.ok) throw new Error(`Failed to leave organization: ${resp.status}`);
 }

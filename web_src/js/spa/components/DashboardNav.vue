@@ -37,17 +37,17 @@
                 v-for="org in orgs"
                 :key="org.id"
                 class="item"
-                :class="{active: activeOrg === org.login, selected: activeOrg === org.login}"
-                :to="orgDashboardRoute(org.login)"
+                :class="{active: activeOrg === org.username, selected: activeOrg === org.username}"
+                :to="orgDashboardRoute(org.username)"
               >
                 <img
                   :src="org.avatar_url"
-                  :alt="org.login"
+                  :alt="org.username"
                   class="ui avatar image tw-mr-1"
                   width="20"
                   height="20"
                 >
-                <span class="gt-ellipsis">{{ org.login }}</span>
+                <span class="gt-ellipsis">{{ org.full_name || org.username }}</span>
               </RouterLink>
             </div>
             <RouterLink class="item" to="/org/create">
@@ -94,7 +94,7 @@
 import {ref, computed, onMounted, onUnmounted} from 'vue';
 import {RouterLink} from 'vue-router';
 import {SvgIcon} from '../../svg.ts';
-import {getUserOrgs, getMyOrgs, type User} from '../api/index.ts';
+import {getUserOrgs, getMyOrgs, type User, type Organization} from '../api/index.ts';
 
 const props = defineProps<{
   currentUser: User | null;
@@ -102,7 +102,7 @@ const props = defineProps<{
 }>();
 
 const contextMenuOpen = ref(false);
-const orgs = ref<User[]>([]);
+const orgs = ref<Organization[]>([]);
 const activeOrg = ref<string | null>(null);
 
 const currentPath = computed(() => {
@@ -112,9 +112,8 @@ const currentPath = computed(() => {
   return '/';
 });
 
-function orgDashboardRoute(orgLogin: string): string {
-  // Route to the org home page (OrgHomePage) within the SPA.
-  return `/org/${orgLogin}`;
+function orgDashboardRoute(orgUsername: string): string {
+  return `/org/${orgUsername}`;
 }
 
 function toggleContextMenu() {
@@ -133,7 +132,18 @@ onMounted(async () => {
     } catch {
       // getMyOrgs requires authentication; fall back to public org list
       try {
-        orgs.value = await getUserOrgs(props.currentUser.login);
+        const publicOrgs = await getUserOrgs(props.currentUser.login);
+        // Convert User[] to Organization[]
+        orgs.value = publicOrgs.map((u) => ({
+          id: u.id,
+          username: u.login,
+          full_name: u.full_name,
+          avatar_url: u.avatar_url,
+          description: '',
+          website: '',
+          location: '',
+          visibility: 'public',
+        } as Organization));
       } catch {
         // non-critical: show empty list
       }

@@ -18881,6 +18881,21 @@
             "$ref": "#/responses/User"
           }
         }
+      },
+      "delete": {
+        "tags": [
+          "user"
+        ],
+        "summary": "Delete the authenticated user",
+        "operationId": "userDeleteSelf",
+        "responses": {
+          "204": {
+            "description": "No Content – account deleted"
+          },
+          "403": {
+            "$ref": "#/responses/forbidden"
+          }
+        }
       }
     },
     "/user/actions/jobs": {
@@ -18922,6 +18937,54 @@
           },
           "404": {
             "$ref": "#/responses/notFound"
+          }
+        }
+      }
+    },
+    "/user/actions/permissions": {
+      "get": {
+        "produces": [
+          "application/json"
+        ],
+        "tags": [
+          "user"
+        ],
+        "summary": "Get the Actions permissions for the authenticated user",
+        "operationId": "userGetActionsPermissions",
+        "responses": {
+          "200": {
+            "$ref": "#/responses/UserActionsPermissions"
+          }
+        }
+      },
+      "put": {
+        "consumes": [
+          "application/json"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "tags": [
+          "user"
+        ],
+        "summary": "Update the Actions permissions for the authenticated user",
+        "operationId": "userUpdateActionsPermissions",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/UserActionsPermissions"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/responses/UserActionsPermissions"
+          },
+          "400": {
+            "$ref": "#/responses/error"
           }
         }
       }
@@ -19723,6 +19786,39 @@
         }
       }
     },
+    "/user/change_password": {
+      "post": {
+        "consumes": [
+          "application/json"
+        ],
+        "tags": [
+          "user"
+        ],
+        "summary": "Change the authenticated user's password",
+        "operationId": "userChangePassword",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ChangePasswordOption"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content – password changed successfully"
+          },
+          "400": {
+            "$ref": "#/responses/error"
+          },
+          "403": {
+            "$ref": "#/responses/forbidden"
+          }
+        }
+      }
+    },
     "/user/emails": {
       "get": {
         "produces": [
@@ -20408,6 +20504,45 @@
           },
           "404": {
             "$ref": "#/responses/notFound"
+          }
+        }
+      }
+    },
+    "/user/register": {
+      "post": {
+        "consumes": [
+          "application/json"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "tags": [
+          "user"
+        ],
+        "summary": "Register a new user (open registration)",
+        "operationId": "userRegister",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/RegisterUserOption"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "$ref": "#/responses/User"
+          },
+          "400": {
+            "$ref": "#/responses/error"
+          },
+          "403": {
+            "$ref": "#/responses/forbidden"
+          },
+          "422": {
+            "$ref": "#/responses/validationError"
           }
         }
       }
@@ -29994,6 +30129,28 @@
       },
       "x-go-package": "code.gitea.io/gitea/modules/structs"
     },
+    "UserActionsPermissions": {
+      "type": "object",
+      "title": "UserActionsPermissions holds the Actions permissions for a user or organisation owner.",
+      "properties": {
+        "allowed_cross_repo_ids": {
+          "description": "AllowedCrossRepoIDs is the list of repository IDs allowed for cross-repo access.",
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "x-go-name": "AllowedCrossRepoIDs"
+        },
+        "token_permission_mode": {
+          "description": "TokenPermissionMode is the default Actions token permission mode.\nPossible values: \"permissive\", \"restricted\"",
+          "type": "string",
+          "x-go-name": "TokenPermissionMode",
+          "example": "permissive"
+        }
+      },
+      "x-go-package": "code.gitea.io/gitea/modules/structs"
+    },
     "UserBadgeOption": {
       "description": "UserBadgeOption options for link between users and badges",
       "type": "object",
@@ -31234,6 +31391,12 @@
       "description": "User",
       "schema": {
         "$ref": "#/definitions/User"
+      }
+    },
+    "UserActionsPermissions": {
+      "description": "UserActionsPermissions",
+      "schema": {
+        "$ref": "#/definitions/UserActionsPermissions"
       }
     },
     "UserHeatmapData": {

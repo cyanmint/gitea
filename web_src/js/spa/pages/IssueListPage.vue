@@ -1,42 +1,12 @@
 <template>
   <AppLayout page-class="repository issue-list">
-    <!-- Secondary nav (repo header + tabs) — matches templates/repo/header.tmpl -->
-    <div v-if="owner && repoName" class="secondary-nav">
-      <div class="ui container">
-        <div class="repo-header flex-left-right">
-          <div class="flex-text-block">
-            <div class="flex-text-block tw-flex-wrap tw-text-18">
-              <RouterLink class="muted tw-font-normal" :to="`/${owner}`">{{ owner }}</RouterLink>/<RouterLink class="muted" :to="`/${owner}/${repoName}`">{{ repoName }}</RouterLink>
-            </div>
-          </div>
-          <div class="flex-text-block tw-flex-wrap">
-            <RouterLink v-if="currentUser" :to="`/${owner}/${repoName}/issues/new`" class="ui compact small primary button">
-              New Issue
-            </RouterLink>
-          </div>
-        </div>
-      </div>
-      <!-- Tab navigation -->
-      <div class="ui container">
-        <overflow-menu class="ui secondary pointing menu">
-          <div class="overflow-menu-items">
-            <RouterLink :to="`/${owner}/${repoName}`" class="item">
-              <SvgIcon name="octicon-code" :size="16"/> Code
-            </RouterLink>
-            <RouterLink :to="`/${owner}/${repoName}/issues`" class="item active">
-              <SvgIcon name="octicon-issue-opened" :size="16"/> Issues
-            </RouterLink>
-            <RouterLink :to="`/${owner}/${repoName}/pulls`" class="item">
-              <SvgIcon name="octicon-git-pull-request" :size="16"/> Pull Requests
-            </RouterLink>
-            <RouterLink :to="`/${owner}/${repoName}/releases`" class="item">
-              <SvgIcon name="octicon-tag" :size="16"/> Releases
-            </RouterLink>
-          </div>
-        </overflow-menu>
-      </div>
-      <div class="ui tabs divider"/>
-    </div>
+    <RepoNav
+      :owner="owner"
+      :repo-name="repoName"
+      active-tab="issues"
+      :repo="repo"
+      :current-user="currentUser"
+    />
 
     <div class="ui container">
       <!-- Issue list header -->
@@ -54,6 +24,9 @@
             <span class="ui label tw-ml-1">{{ closedCount }}</span>
           </a>
         </h2>
+        <RouterLink v-if="currentUser" :to="`/${owner}/${repoName}/issues/new`" class="ui compact small primary button">
+          New Issue
+        </RouterLink>
       </div>
 
       <!-- Loading / error states -->
@@ -137,12 +110,13 @@
 import {ref, computed, onMounted, watch} from 'vue';
 import {RouterLink, useRoute} from 'vue-router';
 import AppLayout from '../layouts/AppLayout.vue';
+import RepoNav from '../components/RepoNav.vue';
 import {SvgIcon} from '../../svg.ts';
-import {getRepoIssues, getRepoIssueCount, getCurrentUser, type Issue, type User} from '../api/index.ts';
+import {getRepo, getRepoIssues, getRepoIssueCount, getCurrentUser, type Issue, type User, type Repository} from '../api/index.ts';
 
 const route = useRoute();
-const owner = String(route.params.owner);
-const repoName = String(route.params.repo);
+const owner = String(route.params['owner']);
+const repoName = String(route.params['repo']);
 
 const loading = ref(true);
 const error = ref('');
@@ -154,6 +128,7 @@ const totalPages = ref(1);
 const openCount = ref(0);
 const closedCount = ref(0);
 const currentUser = ref<User | null>(null);
+const repo = ref<Repository | null>(null);
 
 const labelTextColor = computed(() => (hex: string) => {
   const r = parseInt(hex.substring(0, 2), 16);
@@ -209,7 +184,10 @@ async function loadIssues() {
 }
 
 onMounted(async () => {
-  currentUser.value = await getCurrentUser();
+  [currentUser.value, repo.value] = await Promise.all([
+    getCurrentUser(),
+    getRepo(owner, repoName).catch(() => null),
+  ]);
   const [openTotal, closedTotal] = await Promise.all([
     getRepoIssueCount(owner, repoName, 'open', 'issues'),
     getRepoIssueCount(owner, repoName, 'closed', 'issues'),

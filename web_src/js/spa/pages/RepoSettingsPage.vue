@@ -9,25 +9,13 @@
     </div>
 
     <template v-else-if="repo">
-      <!-- Secondary nav (same as other repo pages) -->
-      <div class="secondary-nav">
-        <div class="ui container">
-          <div class="repo-header flex-left-right">
-            <div class="flex-text-block tw-flex-wrap tw-text-18">
-              <RouterLink class="muted tw-font-normal" :to="`/${owner}`">{{ owner }}</RouterLink>/<RouterLink class="muted" :to="`/${owner}/${repoName}`">{{ repoName }}</RouterLink>
-            </div>
-          </div>
-        </div>
-        <div class="ui container">
-          <div class="ui secondary pointing menu">
-            <RouterLink :to="`/${owner}/${repoName}`" class="item">Code</RouterLink>
-            <RouterLink :to="`/${owner}/${repoName}/issues`" class="item">Issues</RouterLink>
-            <RouterLink :to="`/${owner}/${repoName}/pulls`" class="item">Pull Requests</RouterLink>
-            <RouterLink :to="`/${owner}/${repoName}/settings`" class="item active">Settings</RouterLink>
-          </div>
-        </div>
-        <div class="ui tabs divider"/>
-      </div>
+      <RepoNav
+        :owner="owner"
+        :repo-name="repoName"
+        active-tab="settings"
+        :repo="repo"
+        :current-user="currentUser"
+      />
 
       <!-- Settings content with sidebar -->
       <div role="main" :class="`page-content repository settings ${activeTab}`">
@@ -239,11 +227,12 @@
 
 <script setup lang="ts">
 import {ref, computed, onMounted, watch} from 'vue';
-import {RouterLink, useRoute, useRouter} from 'vue-router';
+import {useRoute, useRouter} from 'vue-router';
 import AppLayout from '../layouts/AppLayout.vue';
+import RepoNav from '../components/RepoNav.vue';
+import {GET, POST, PATCH, PUT, DELETE} from '../../../modules/fetch.ts';
 import {getRepo, getCurrentUser, type Repository, type User} from '../api/index.ts';
 import {apiBase, appSubUrl} from '../spaconfig.ts';
-import {getStoredToken} from '../api/index.ts';
 
 const route = useRoute();
 const router = useRouter();
@@ -291,11 +280,6 @@ const newKeyReadOnly = ref(true);
 const addingKey = ref(false);
 const keyError = ref('');
 
-function authHeaders(): Record<string, string> {
-  const token = getStoredToken();
-  return token ? {Authorization: `token ${token}`} : {};
-}
-
 onMounted(async () => {
   [currentUser.value, repo.value] = await Promise.all([
     getCurrentUser(),
@@ -321,15 +305,13 @@ async function saveBasicSettings() {
   saveError.value = '';
   saveSuccess.value = false;
   try {
-    const resp = await fetch(`${apiBase}/repos/${encodeURIComponent(owner.value)}/${encodeURIComponent(repoName.value)}`, {
-      method: 'PATCH',
-      headers: {'Content-Type': 'application/json', ...authHeaders()},
-      body: JSON.stringify({
+    const resp = await PATCH(`${apiBase}/repos/${encodeURIComponent(owner.value)}/${encodeURIComponent(repoName.value)}`, {
+      data: {
         name: editName.value,
         description: editDescription.value,
         website: editWebsite.value,
         private: editPrivate.value,
-      }),
+      },
     });
     if (!resp.ok) throw new Error('Failed to save settings');
     const updated = await resp.json() as Repository;
@@ -346,19 +328,15 @@ async function saveBasicSettings() {
 }
 
 async function archiveRepo() {
-  const resp = await fetch(`${apiBase}/repos/${encodeURIComponent(owner.value)}/${encodeURIComponent(repoName.value)}`, {
-    method: 'PATCH',
-    headers: {'Content-Type': 'application/json', ...authHeaders()},
-    body: JSON.stringify({archived: true}),
+  const resp = await PATCH(`${apiBase}/repos/${encodeURIComponent(owner.value)}/${encodeURIComponent(repoName.value)}`, {
+    data: {archived: true},
   });
   if (resp.ok && repo.value) repo.value.archived = true;
 }
 
 async function unarchiveRepo() {
-  const resp = await fetch(`${apiBase}/repos/${encodeURIComponent(owner.value)}/${encodeURIComponent(repoName.value)}`, {
-    method: 'PATCH',
-    headers: {'Content-Type': 'application/json', ...authHeaders()},
-    body: JSON.stringify({archived: false}),
+  const resp = await PATCH(`${apiBase}/repos/${encodeURIComponent(owner.value)}/${encodeURIComponent(repoName.value)}`, {
+    data: {archived: false},
   });
   if (resp.ok && repo.value) repo.value.archived = false;
 }
@@ -367,10 +345,7 @@ async function deleteRepo() {
   deleting.value = true;
   deleteError.value = '';
   try {
-    const resp = await fetch(`${apiBase}/repos/${encodeURIComponent(owner.value)}/${encodeURIComponent(repoName.value)}`, {
-      method: 'DELETE',
-      headers: authHeaders(),
-    });
+    const resp = await DELETE(`${apiBase}/repos/${encodeURIComponent(owner.value)}/${encodeURIComponent(repoName.value)}`);
     if (!resp.ok) throw new Error('Failed to delete repository');
     router.push(`/${owner.value}`);
   } catch (e) {
@@ -382,9 +357,7 @@ async function deleteRepo() {
 async function loadCollaborators() {
   collabLoading.value = true;
   try {
-    const resp = await fetch(`${apiBase}/repos/${encodeURIComponent(owner.value)}/${encodeURIComponent(repoName.value)}/collaborators`, {
-      headers: authHeaders(),
-    });
+    const resp = await GET(`${apiBase}/repos/${encodeURIComponent(owner.value)}/${encodeURIComponent(repoName.value)}/collaborators`);
     if (resp.ok) collaborators.value = await resp.json() as User[];
   } finally {
     collabLoading.value = false;
@@ -395,10 +368,8 @@ async function addCollaborator() {
   addingCollab.value = true;
   collabError.value = '';
   try {
-    const resp = await fetch(`${apiBase}/repos/${encodeURIComponent(owner.value)}/${encodeURIComponent(repoName.value)}/collaborators/${encodeURIComponent(newCollab.value)}`, {
-      method: 'PUT',
-      headers: {'Content-Type': 'application/json', ...authHeaders()},
-      body: JSON.stringify({permission: 'write'}),
+    const resp = await PUT(`${apiBase}/repos/${encodeURIComponent(owner.value)}/${encodeURIComponent(repoName.value)}/collaborators/${encodeURIComponent(newCollab.value)}`, {
+      data: {permission: 'write'},
     });
     if (!resp.ok) throw new Error('Failed to add collaborator');
     newCollab.value = '';
@@ -411,19 +382,14 @@ async function addCollaborator() {
 }
 
 async function removeCollaborator(username: string) {
-  await fetch(`${apiBase}/repos/${encodeURIComponent(owner.value)}/${encodeURIComponent(repoName.value)}/collaborators/${encodeURIComponent(username)}`, {
-    method: 'DELETE',
-    headers: authHeaders(),
-  });
+  await DELETE(`${apiBase}/repos/${encodeURIComponent(owner.value)}/${encodeURIComponent(repoName.value)}/collaborators/${encodeURIComponent(username)}`);
   collaborators.value = collaborators.value.filter((c) => c.login !== username);
 }
 
 async function loadHooks() {
   hooksLoading.value = true;
   try {
-    const resp = await fetch(`${apiBase}/repos/${encodeURIComponent(owner.value)}/${encodeURIComponent(repoName.value)}/hooks`, {
-      headers: authHeaders(),
-    });
+    const resp = await GET(`${apiBase}/repos/${encodeURIComponent(owner.value)}/${encodeURIComponent(repoName.value)}/hooks`);
     if (resp.ok) hooks.value = await resp.json();
   } finally {
     hooksLoading.value = false;
@@ -433,9 +399,7 @@ async function loadHooks() {
 async function loadDeployKeys() {
   keysLoading.value = true;
   try {
-    const resp = await fetch(`${apiBase}/repos/${encodeURIComponent(owner.value)}/${encodeURIComponent(repoName.value)}/keys`, {
-      headers: authHeaders(),
-    });
+    const resp = await GET(`${apiBase}/repos/${encodeURIComponent(owner.value)}/${encodeURIComponent(repoName.value)}/keys`);
     if (resp.ok) deployKeys.value = await resp.json();
   } finally {
     keysLoading.value = false;
@@ -446,10 +410,8 @@ async function addDeployKey() {
   addingKey.value = true;
   keyError.value = '';
   try {
-    const resp = await fetch(`${apiBase}/repos/${encodeURIComponent(owner.value)}/${encodeURIComponent(repoName.value)}/keys`, {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json', ...authHeaders()},
-      body: JSON.stringify({title: newKeyTitle.value, key: newKeyContent.value, read_only: newKeyReadOnly.value}),
+    const resp = await POST(`${apiBase}/repos/${encodeURIComponent(owner.value)}/${encodeURIComponent(repoName.value)}/keys`, {
+      data: {title: newKeyTitle.value, key: newKeyContent.value, read_only: newKeyReadOnly.value},
     });
     if (!resp.ok) throw new Error('Failed to add deploy key');
     newKeyTitle.value = '';
@@ -463,10 +425,7 @@ async function addDeployKey() {
 }
 
 async function removeDeployKey(id: number) {
-  await fetch(`${apiBase}/repos/${encodeURIComponent(owner.value)}/${encodeURIComponent(repoName.value)}/keys/${id}`, {
-    method: 'DELETE',
-    headers: authHeaders(),
-  });
+  await DELETE(`${apiBase}/repos/${encodeURIComponent(owner.value)}/${encodeURIComponent(repoName.value)}/keys/${id}`);
   deployKeys.value = deployKeys.value.filter((k) => k.id !== id);
 }
 </script>

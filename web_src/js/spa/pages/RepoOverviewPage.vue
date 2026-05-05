@@ -12,100 +12,21 @@
     </div>
 
     <template v-else-if="repo">
-      <!-- ── Secondary nav (repo header + tabs) ──────────────────────── -->
-      <div class="secondary-nav">
-        <div class="ui container">
-          <div class="repo-header flex-left-right">
-            <!-- left: owner/repo name + badges -->
-            <div class="flex-text-block">
-              <div class="flex-text-block tw-flex-wrap tw-text-18">
-                <RouterLink class="muted tw-font-normal" :to="`/${owner}`">{{ owner }}</RouterLink>/<RouterLink class="muted" :to="`/${owner}/${repoName}`">{{ repoName }}</RouterLink>
-              </div>
-              <div class="flex-text-block tw-flex-wrap">
-                <span v-if="repo.archived" class="ui basic label not-mobile">Archived</span>
-                <span v-if="repo.private" class="ui basic label not-mobile">Private</span>
-                <span v-if="repo.fork" class="ui basic label not-mobile">Fork</span>
-              </div>
-            </div>
+      <!-- ── Secondary nav ──────────────────────────────────────────────── -->
+      <RepoNav
+        :owner="owner"
+        :repo-name="repoName"
+        active-tab="code"
+        :repo="repo"
+        :current-user="currentUser"
+        :starred="starred"
+        :star-loading="starLoading"
+        @toggle-star="toggleStar"
+      />
 
-            <!-- right: star/fork buttons -->
-            <div class="flex-text-block tw-flex-wrap">
-              <!-- star button -->
-              <div v-if="currentUser" class="ui buttons">
-                <button
-                  class="ui compact small basic button"
-                  :class="{loading: starLoading}"
-                  :disabled="starLoading"
-                  @click="toggleStar"
-                >
-                  <SvgIcon name="octicon-star" :size="16"/>
-                  {{ starred ? 'Unstar' : 'Star' }}
-                </button>
-                <RouterLink :to="`/${owner}/${repoName}/stargazers`" class="ui compact small basic button">
-                  {{ repo.stars_count }}
-                </RouterLink>
-              </div>
-              <div v-else class="ui buttons">
-                <RouterLink to="/user/login" class="ui compact small basic button" rel="nofollow">
-                  <SvgIcon name="octicon-star" :size="16"/> Star
-                </RouterLink>
-                <RouterLink :to="`/${owner}/${repoName}/stargazers`" class="ui compact small basic button">
-                  {{ repo.stars_count }}
-                </RouterLink>
-              </div>
-              <!-- fork button -->
-              <div class="ui buttons tw-ml-1">
-                <RouterLink :to="`/${owner}/${repoName}`" class="ui compact small basic button">
-                  <SvgIcon name="octicon-repo-forked" :size="16"/> Fork
-                </RouterLink>
+      <!-- ── Main content ─────────────────────────────────────────────── -->
                 <RouterLink :to="`/${owner}/${repoName}/forks`" class="ui compact small basic button">
                   {{ repo.forks_count }}
-                </RouterLink>
-              </div>
-            </div>
-          </div>
-
-          <!-- fork/mirror info -->
-          <div v-if="repo.fork && repo.parent" class="secondary-info">
-            Forked from <RouterLink :to="`/${repo.parent.full_name}`">{{ repo.parent.full_name }}</RouterLink>
-          </div>
-        </div>
-
-        <!-- tab navigation -->
-        <div class="ui container">
-          <overflow-menu class="ui secondary pointing menu">
-            <div class="overflow-menu-items">
-              <RouterLink :to="`/${owner}/${repoName}`" class="item" :class="{active: activeTab === 'code'}">
-                <SvgIcon name="octicon-code" :size="16"/> Code
-              </RouterLink>
-              <RouterLink :to="`/${owner}/${repoName}/issues`" class="item" :class="{active: activeTab === 'issues'}">
-                <SvgIcon name="octicon-issue-opened" :size="16"/> Issues
-                <span v-if="repo.open_issues_count" class="ui small label">{{ repo.open_issues_count }}</span>
-              </RouterLink>
-              <RouterLink :to="`/${owner}/${repoName}/pulls`" class="item" :class="{active: activeTab === 'pulls'}">
-                <SvgIcon name="octicon-git-pull-request" :size="16"/> Pull Requests
-              </RouterLink>
-              <RouterLink :to="`/${owner}/${repoName}/releases`" class="item" :class="{active: activeTab === 'releases'}">
-                <SvgIcon name="octicon-tag" :size="16"/> Releases
-              </RouterLink>
-              <RouterLink :to="`/${owner}/${repoName}/wiki`" class="item" :class="{active: activeTab === 'wiki'}">
-                <SvgIcon name="octicon-book" :size="16"/> Wiki
-              </RouterLink>
-              <RouterLink :to="`/${owner}/${repoName}/activity`" class="item" :class="{active: activeTab === 'activity'}">
-                <SvgIcon name="octicon-pulse" :size="16"/> Activity
-              </RouterLink>
-              <template v-if="currentUser && (currentUser.login === owner || currentUser.is_admin)">
-                <span class="item-flex-space"/>
-                <RouterLink :to="`/${owner}/${repoName}/settings`" class="item" :class="{active: activeTab === 'settings'}">
-                  <SvgIcon name="octicon-tools" :size="16"/> Settings
-                </RouterLink>
-              </template>
-            </div>
-          </overflow-menu>
-        </div>
-        <div class="ui tabs divider"/>
-      </div>
-
       <!-- ── Main content ─────────────────────────────────────────────── -->
       <div class="ui container">
         <div class="repo-grid-filelist-sidebar">
@@ -216,6 +137,7 @@
 import {ref, computed, onMounted} from 'vue';
 import {RouterLink, useRoute} from 'vue-router';
 import AppLayout from '../layouts/AppLayout.vue';
+import RepoNav from '../components/RepoNav.vue';
 import {SvgIcon} from '../../svg.ts';
 import {
   getRepo, getRepoContents, getCurrentUser,
@@ -225,8 +147,8 @@ import {
 import {rewriteToBackend} from '../spaconfig.ts';
 
 const route = useRoute();
-const owner = String(route.params.owner);
-const repoName = String(route.params.repo);
+const owner = String(route.params['owner']);
+const repoName = String(route.params['repo']);
 
 const loading = ref(true);
 const error = ref('');
@@ -239,9 +161,6 @@ const dirContents = ref<ContentsResponse[]>([]);
 
 const starred = ref(false);
 const starLoading = ref(false);
-
-// Active tab is always 'code' on this page
-const activeTab = 'code';
 
 const httpCloneUrl = computed(() => rewriteToBackend(repo.value?.clone_url ?? ''));
 const sshCloneUrl = computed(() => repo.value?.ssh_url ?? '');

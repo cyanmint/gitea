@@ -1051,6 +1051,10 @@ func Routes() *web.Router {
 
 				m.Get("/runs", reqToken(), user.ListWorkflowRuns)
 				m.Get("/jobs", reqToken(), user.ListWorkflowJobs)
+
+				m.Combo("/permissions").
+					Get(user.GetActionsPermissions).
+					Put(bind(api.UserActionsPermissions{}), user.UpdateActionsPermissions)
 			})
 
 			m.Get("/followers", user.ListMyFollowers)

@@ -1,5 +1,7 @@
 import {createRouter, type RouteRecordRaw} from 'vue-router';
 import {createQueryHistory} from './queryHistory.ts';
+import {GET} from '../../modules/fetch.ts';
+import {apiBase} from '../spaconfig.ts';
 
 // Pages
 import InstallPage from '../pages/InstallPage.vue';
@@ -44,7 +46,6 @@ import NotFoundPage from '../pages/NotFoundPage.vue';
 // instance has not been set up yet.  On the first navigation to any page that
 // is not already the install wizard, probe the API and redirect if needed.
 // ---------------------------------------------------------------------------
-import {apiBase} from '../spaconfig.ts';
 
 // ---------------------------------------------------------------------------
 // Route table
@@ -119,9 +120,9 @@ const routes: RouteRecordRaw[] = [
   // ── Site-admin (/-/admin/…) ───────────────────────────────────────────────
   // Legacy paths: /admin/... → /-/admin/... (old Gitea used /admin/, new uses /-/admin/)
   {path: '/admin', redirect: '/-/admin'},
-  {path: '/admin/:section', redirect: (to) => `/-/admin/${to.params.section}`},
-  {path: '/admin/:section/:subsection', redirect: (to) => `/-/admin/${to.params.section}/${to.params.subsection}`},
-  {path: '/admin/:section/:subsection/:action', redirect: (to) => `/-/admin/${to.params.section}/${to.params.subsection}/${to.params.action}`},
+  {path: '/admin/:section', redirect: (to) => `/-/admin/${String(to.params['section'])}`},
+  {path: '/admin/:section/:subsection', redirect: (to) => `/-/admin/${String(to.params['section'])}/${String(to.params['subsection'])}`},
+  {path: '/admin/:section/:subsection/:action', redirect: (to) => `/-/admin/${String(to.params['section'])}/${String(to.params['subsection'])}/${String(to.params['action'])}`},
 
   {path: '/-/admin', component: AdminPage, meta: {title: 'Administration'}},
   {path: '/-/admin/:section', component: AdminPage, meta: {title: 'Administration'}},
@@ -231,7 +232,7 @@ router.beforeEach(async (to) => {
   if (installCheckDone || to.path === '/install') return true;
   installCheckDone = true; // only probe once per SPA session
   try {
-    const resp = await fetch(`${apiBase}/settings/api`, {method: 'GET'});
+    const resp = await GET(`${apiBase}/settings/api`);
     if (resp.status === 503) {
       return {path: '/install', replace: true};
     }

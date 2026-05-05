@@ -389,7 +389,27 @@
             <div class="user-setting-content">
               <h4 class="ui top attached header">Blocked Users</h4>
               <div class="ui attached segment">
-                <p>Manage the list of users you have blocked through the full Gitea interface.</p>
+                <div v-if="blockedLoading" class="ui active centered inline loader"/>
+                <div v-else-if="blockedUsers.length">
+                  <div class="flex-divided-list items-with-main">
+                    <div v-for="u in blockedUsers" :key="u.id" class="item">
+                      <div class="item-leading">
+                        <img :src="u.avatar_url" :alt="u.login" class="ui mini circular image" width="28" height="28">
+                      </div>
+                      <div class="item-main">
+                        <div class="item-title">
+                          <RouterLink :to="`/${u.login}`">{{ u.full_name || u.login }}</RouterLink>
+                        </div>
+                        <div class="item-body">@{{ u.login }}</div>
+                      </div>
+                      <div class="item-trailing">
+                        <button class="ui tiny button" @click="submitUnblockUser(u.login)">Unblock</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <p v-else>You have not blocked any users.</p>
+                <div v-if="blockedError" class="ui negative message tw-mt-2"><p>{{ blockedError }}</p></div>
               </div>
             </div>
           </template>
@@ -398,13 +418,33 @@
           <template v-else-if="activeTab === 'organization'">
             <div class="user-setting-content">
               <h4 class="ui top attached header">
-                Organizations
+                My Organizations
                 <div class="ui right">
                   <RouterLink to="/org/create" class="ui primary tiny button">Create Organization</RouterLink>
                 </div>
               </h4>
               <div class="ui attached segment orgs">
-                <p>Manage your organization memberships through the full Gitea interface.</p>
+                <div v-if="orgsLoading" class="ui active centered inline loader"/>
+                <div v-else-if="orgs.length" class="flex-divided-list items-with-main">
+                  <div v-for="org in orgs" :key="org.id" class="item">
+                    <div class="item-leading">
+                      <img :src="org.avatar_url" :alt="org.username" class="ui mini circular image" width="28" height="28">
+                    </div>
+                    <div class="item-main">
+                      <div class="item-title">
+                        <RouterLink :to="`/${org.username}`">{{ org.full_name || org.username }}</RouterLink>
+                      </div>
+                      <div class="item-body">{{ org.description }}</div>
+                    </div>
+                    <div class="item-trailing">
+                      <button class="ui red tiny button" :disabled="leavingOrg === org.username" @click="submitLeaveOrg(org)">
+                        {{ leavingOrg === org.username ? 'Leaving…' : 'Leave' }}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                <p v-else>You are not a member of any organizations.</p>
+                <div v-if="orgsError" class="ui negative message tw-mt-2"><p>{{ orgsError }}</p></div>
               </div>
             </div>
           </template>
@@ -414,7 +454,23 @@
             <div class="user-setting-content">
               <h4 class="ui top attached header">Repositories</h4>
               <div class="ui attached segment">
-                <p>Manage your repository access through the full Gitea interface.</p>
+                <div v-if="reposLoading" class="ui active centered inline loader"/>
+                <div v-else-if="myRepos.length">
+                  <div class="ui list">
+                    <div v-for="r in myRepos" :key="r.id" class="item">
+                      <div class="content flex-text-block">
+                        <SvgIcon v-if="r.private" name="octicon-lock" :size="16" class="tw-text-gold"/>
+                        <SvgIcon v-else-if="r.fork" name="octicon-repo-forked" :size="16"/>
+                        <SvgIcon v-else-if="r.mirror" name="octicon-mirror" :size="16"/>
+                        <SvgIcon v-else name="octicon-repo" :size="16"/>
+                        <RouterLink :to="`/${r.full_name}`" class="name">{{ r.full_name }}</RouterLink>
+                        <span class="tw-text-text-light-3">{{ formatSize(r.size) }}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <p v-else>You have no repositories.</p>
+                <div v-if="reposError" class="ui negative message tw-mt-2"><p>{{ reposError }}</p></div>
               </div>
             </div>
           </template>
@@ -422,9 +478,15 @@
           <!-- Packages tab -->
           <template v-else-if="activeTab === 'packages'">
             <div class="user-setting-content">
-              <h4 class="ui top attached header">Packages</h4>
+              <h4 class="ui top attached header">Package Registry Settings</h4>
               <div class="ui attached segment">
-                <p>Manage your packages through the full Gitea interface.</p>
+                <p>
+                  Package registry settings such as cleanup rules require server-side configuration.
+                  Visit the full interface to manage cleanup policies and registry-specific settings.
+                </p>
+                <a v-if="currentUser" :href="`${appSubUrl}/${currentUser.login}/packages`" class="ui primary button" target="_blank" rel="noopener">
+                  Manage Packages
+                </a>
               </div>
             </div>
           </template>
@@ -432,9 +494,55 @@
           <!-- Webhooks tab -->
           <template v-else-if="activeTab === 'hooks'">
             <div class="user-setting-content">
-              <h4 class="ui top attached header">Webhooks</h4>
+              <h4 class="ui top attached header">
+                Webhooks
+              </h4>
               <div class="ui attached segment">
-                <p>Manage your webhooks through the full Gitea interface.</p>
+                <div v-if="hooksLoading" class="ui active centered inline loader"/>
+                <div v-else-if="userHooks.length">
+                  <div class="flex-divided-list items-with-main">
+                    <div v-for="hook in userHooks" :key="hook.id" class="item">
+                      <div class="item-main">
+                        <div class="item-title tw-font-mono tw-text-sm">{{ hook.config?.url }}</div>
+                        <div class="item-body">
+                          <span class="ui small label">{{ hook.type }}</span>
+                          <span :class="hook.active ? 'ui small green label' : 'ui small grey label'">
+                            {{ hook.active ? 'Active' : 'Inactive' }}
+                          </span>
+                          — created {{ formatDate(hook.created) }}
+                        </div>
+                      </div>
+                      <div class="item-trailing">
+                        <button class="ui red tiny button" @click="submitDeleteUserHook(hook.id)">Delete</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <p v-else>No webhooks configured.</p>
+                <div v-if="hooksError" class="ui negative message tw-mt-2"><p>{{ hooksError }}</p></div>
+              </div>
+              <div class="ui bottom attached segment">
+                <details>
+                  <summary><h4 class="ui header tw-inline-block tw-my-2">Add Webhook</h4></summary>
+                  <div class="ui form">
+                    <div class="field">
+                      <label>Payload URL</label>
+                      <input v-model="newHookUrl" type="url" placeholder="https://example.com/webhook">
+                    </div>
+                    <div class="field">
+                      <label>Content Type</label>
+                      <select v-model="newHookContentType" class="ui dropdown">
+                        <option value="json">application/json</option>
+                        <option value="form">application/x-www-form-urlencoded</option>
+                      </select>
+                    </div>
+                    <div class="field">
+                      <button class="ui primary button" :disabled="!newHookUrl || hooksSaving" @click="submitCreateUserHook">
+                        {{ hooksSaving ? 'Adding…' : 'Add Webhook' }}
+                      </button>
+                    </div>
+                  </div>
+                </details>
               </div>
             </div>
           </template>
@@ -442,12 +550,43 @@
           <!-- Actions tab -->
           <template v-else-if="activeTab === 'actions'">
             <div class="user-setting-content">
-              <h4 class="ui top attached header">
-                Actions — {{ activeSub || 'General' }}
-              </h4>
-              <div class="ui attached segment">
-                <p>Manage Actions settings through the full Gitea interface.</p>
-              </div>
+              <!-- General sub-section -->
+              <template v-if="!activeSub || activeSub === 'general'">
+                <h4 class="ui top attached header">Actions — Token Permission Mode</h4>
+                <div class="ui attached segment">
+                  <div v-if="actionsPermsLoading" class="ui active centered inline loader"/>
+                  <div v-else class="ui form">
+                    <div class="field">
+                      <label>Default Token Permission Mode</label>
+                      <p class="tw-text-sm tw-text-gray-600">
+                        Controls whether Actions tokens in this account's repositories have read-only (<em>restricted</em>) or
+                        read-write (<em>permissive</em>) access by default.
+                      </p>
+                      <select v-model="actionsPermMode" class="ui dropdown">
+                        <option value="permissive">Permissive (read-write by default)</option>
+                        <option value="restricted">Restricted (read-only by default)</option>
+                      </select>
+                    </div>
+                    <div class="field">
+                      <button class="ui primary button" :disabled="actionsPermsSaving" @click="saveActionsPerms">
+                        {{ actionsPermsSaving ? 'Saving…' : 'Save' }}
+                      </button>
+                    </div>
+                    <div v-if="actionsPermsError" class="ui negative message"><p>{{ actionsPermsError }}</p></div>
+                    <div v-if="actionsPermsSuccess" class="ui success message"><p>Actions permissions saved.</p></div>
+                  </div>
+                </div>
+              </template>
+              <!-- Secrets/Variables/Runners sub-sections link out -->
+              <template v-else>
+                <h4 class="ui top attached header">Actions — {{ activeSub }}</h4>
+                <div class="ui attached segment">
+                  <p>Manage Actions {{ activeSub }} through the full Gitea interface.</p>
+                  <a v-if="currentUser" :href="`${appSubUrl}/${currentUser.login}/settings/actions/${activeSub}`" class="ui primary button" target="_blank" rel="noopener">
+                    Open in Gitea
+                  </a>
+                </div>
+              </template>
             </div>
           </template>
         </div>
@@ -461,15 +600,22 @@ import {ref, computed, watch, onMounted} from 'vue';
 import {useRoute, RouterLink} from 'vue-router';
 import AppLayout from '../layouts/AppLayout.vue';
 import {GET, PATCH} from '../../modules/fetch.ts';
-import {apiBase} from '../spaconfig.ts';
+import {SvgIcon} from '../../svg.ts';
+import {apiBase, appSubUrl} from '../spaconfig.ts';
 import {
   getCurrentUser,
   listEmails, addEmail, deleteEmail,
   listSSHKeys, createSSHKey, deleteSSHKey,
   listGPGKeys, createGPGKey, deleteGPGKey,
   listAccessTokens, createAccessToken, deleteAccessToken,
-  changePassword, deleteSelf,
+  changePassword, deleteSelf, setStoredToken,
+  listBlockedUsers, unblockUser,
+  listUserHooks, createUserHook, deleteUserHook,
+  getUserActionsPermissions, setUserActionsPermissions,
+  getMyOrgs, leaveOrganization,
+  getMyRepos,
   type User, type EmailAddress, type SSHKey, type GPGKey, type AccessToken,
+  type BlockedUser, type Webhook, type UserActionsPermissions, type Organization, type Repository,
 } from '../api/index.ts';
 
 const route = useRoute();
@@ -672,7 +818,7 @@ async function deleteAccount() {
   deletingAccount.value = true;
   try {
     await deleteSelf();
-    localStorage.removeItem('gitea_spa_token');
+    setStoredToken(null);
     window.location.href = '/';
   } catch (e) {
     deleteAccountError.value = String(e);
@@ -810,6 +956,171 @@ async function submitDeleteGPG(k: GPGKey) {
   }
 }
 
+// ---- Blocked users ----
+
+const blockedUsers = ref<BlockedUser[]>([]);
+const blockedLoading = ref(false);
+const blockedError = ref('');
+
+async function loadBlockedUsers() {
+  blockedLoading.value = true;
+  blockedError.value = '';
+  try {
+    blockedUsers.value = await listBlockedUsers();
+  } catch (e) {
+    blockedError.value = String(e);
+  } finally {
+    blockedLoading.value = false;
+  }
+}
+
+async function submitUnblockUser(login: string) {
+  blockedError.value = '';
+  try {
+    await unblockUser(login);
+    await loadBlockedUsers();
+  } catch (e) {
+    blockedError.value = String(e);
+  }
+}
+
+// ---- Organizations ----
+
+const orgs = ref<Organization[]>([]);
+const orgsLoading = ref(false);
+const orgsError = ref('');
+const leavingOrg = ref('');
+
+async function loadOrgs() {
+  orgsLoading.value = true;
+  orgsError.value = '';
+  try {
+    orgs.value = await getMyOrgs();
+  } catch (e) {
+    orgsError.value = String(e);
+  } finally {
+    orgsLoading.value = false;
+  }
+}
+
+async function submitLeaveOrg(org: Organization) {
+  if (!currentUser.value) return;
+  leavingOrg.value = org.username;
+  orgsError.value = '';
+  try {
+    await leaveOrganization(org.username, currentUser.value.login);
+    await loadOrgs();
+  } catch (e) {
+    orgsError.value = String(e);
+  } finally {
+    leavingOrg.value = '';
+  }
+}
+
+// ---- Repos ----
+
+const myRepos = ref<Repository[]>([]);
+const reposLoading = ref(false);
+const reposError = ref('');
+
+function formatSize(kb: number): string {
+  if (kb < 1024) return `${kb} KB`;
+  return `${(kb / 1024).toFixed(1)} MB`;
+}
+
+async function loadMyRepos() {
+  reposLoading.value = true;
+  reposError.value = '';
+  try {
+    myRepos.value = await getMyRepos();
+  } catch (e) {
+    reposError.value = String(e);
+  } finally {
+    reposLoading.value = false;
+  }
+}
+
+// ---- User webhooks ----
+
+const userHooks = ref<Webhook[]>([]);
+const hooksLoading = ref(false);
+const hooksError = ref('');
+const hooksSaving = ref(false);
+const newHookUrl = ref('');
+const newHookContentType = ref('json');
+
+async function loadUserHooks() {
+  hooksLoading.value = true;
+  hooksError.value = '';
+  try {
+    userHooks.value = await listUserHooks();
+  } catch (e) {
+    hooksError.value = String(e);
+  } finally {
+    hooksLoading.value = false;
+  }
+}
+
+async function submitCreateUserHook() {
+  if (!newHookUrl.value) return;
+  hooksSaving.value = true;
+  hooksError.value = '';
+  try {
+    await createUserHook(newHookUrl.value, newHookContentType.value, ['push', 'create']);
+    newHookUrl.value = '';
+    await loadUserHooks();
+  } catch (e) {
+    hooksError.value = String(e);
+  } finally {
+    hooksSaving.value = false;
+  }
+}
+
+async function submitDeleteUserHook(id: number) {
+  hooksError.value = '';
+  try {
+    await deleteUserHook(id);
+    await loadUserHooks();
+  } catch (e) {
+    hooksError.value = String(e);
+  }
+}
+
+// ---- Actions permissions ----
+
+const actionsPermMode = ref('permissive');
+const actionsPermsLoading = ref(false);
+const actionsPermsSaving = ref(false);
+const actionsPermsError = ref('');
+const actionsPermsSuccess = ref(false);
+
+async function loadActionsPerms() {
+  actionsPermsLoading.value = true;
+  actionsPermsError.value = '';
+  try {
+    const perms = await getUserActionsPermissions();
+    actionsPermMode.value = perms.token_permission_mode || 'permissive';
+  } catch (e) {
+    actionsPermsError.value = String(e);
+  } finally {
+    actionsPermsLoading.value = false;
+  }
+}
+
+async function saveActionsPerms() {
+  actionsPermsSaving.value = true;
+  actionsPermsError.value = '';
+  actionsPermsSuccess.value = false;
+  try {
+    await setUserActionsPermissions({token_permission_mode: actionsPermMode.value, allowed_cross_repo_ids: []});
+    actionsPermsSuccess.value = true;
+  } catch (e) {
+    actionsPermsError.value = String(e);
+  } finally {
+    actionsPermsSaving.value = false;
+  }
+}
+
 // ---- Mount / watch ----
 
 async function loadTabData(tab: string) {
@@ -821,6 +1132,11 @@ async function loadTabData(tab: string) {
     case 'keys':
       await Promise.all([loadSSHKeys(), loadGPGKeys()]);
       break;
+    case 'blocked_users': await loadBlockedUsers(); break;
+    case 'organization': await loadOrgs(); break;
+    case 'repos': await loadMyRepos(); break;
+    case 'hooks': await loadUserHooks(); break;
+    case 'actions': await loadActionsPerms(); break;
   }
 }
 

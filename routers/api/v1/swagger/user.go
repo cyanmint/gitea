@@ -55,3 +55,10 @@ type swaggerResponseBadgeList struct {
 	// in:body
 	Body []api.Badge `json:"body"`
 }
+
+// UserActionsPermissions
+// swagger:response UserActionsPermissions
+type swaggerResponseUserActionsPermissions struct {
+	// in:body
+	Body api.UserActionsPermissions `json:"body"`
+}
