@@ -112,7 +112,7 @@ import {RouterLink, useRoute} from 'vue-router';
 import AppLayout from '../layouts/AppLayout.vue';
 import RepoNav from '../components/RepoNav.vue';
 import {SvgIcon} from '../../svg.ts';
-import {getRepo, getRepoIssues, getRepoIssueCount, getCurrentUser, type Issue, type User, type Repository} from '../api/index.ts';
+import {getRepo, getRepoIssues, getRepoIssueCount, getCurrentUser, isRepoStarred, starRepo, unstarRepo, type Issue, type User, type Repository} from '../api/index.ts';
 
 const route = useRoute();
 const owner = String(route.params['owner']);
@@ -129,6 +129,8 @@ const openCount = ref(0);
 const closedCount = ref(0);
 const currentUser = ref<User | null>(null);
 const repo = ref<Repository | null>(null);
+const starred = ref(false);
+const starLoading = ref(false);
 
 const labelTextColor = computed(() => (hex: string) => {
   const r = parseInt(hex.substring(0, 2), 16);
@@ -188,6 +190,9 @@ onMounted(async () => {
     getCurrentUser(),
     getRepo(owner, repoName).catch(() => null),
   ]);
+  if (currentUser.value) {
+    isRepoStarred(owner, repoName).then((s) => { starred.value = s; }).catch(() => {});
+  }
   const [openTotal, closedTotal] = await Promise.all([
     getRepoIssueCount(owner, repoName, 'open', 'issues'),
     getRepoIssueCount(owner, repoName, 'closed', 'issues'),
@@ -200,4 +205,22 @@ onMounted(async () => {
 watch(() => route.params, () => {
   loadIssues();
 });
+
+async function toggleStar() {
+  if (!currentUser.value || starLoading.value) return;
+  starLoading.value = true;
+  try {
+    if (starred.value) {
+      await unstarRepo(owner, repoName);
+      starred.value = false;
+      if (repo.value) repo.value.stars_count = (repo.value.stars_count ?? 1) - 1;
+    } else {
+      await starRepo(owner, repoName);
+      starred.value = true;
+      if (repo.value) repo.value.stars_count = (repo.value.stars_count ?? 0) + 1;
+    }
+  } finally {
+    starLoading.value = false;
+  }
+}
 </script>
