@@ -247,6 +247,14 @@ export async function getMyOrgs(): Promise<User[]> {
   return resp.json();
 }
 
+/** List repos accessible by the authenticated user (including private). */
+export async function getMyRepos(opts: PaginationOpts = {}): Promise<Repository[]> {
+  const params = new URLSearchParams({page: String(opts.page ?? 1), limit: String(opts.limit ?? 50)});
+  const resp = await GET(`${apiBase}/user/repos?${params}`);
+  if (!resp.ok) return [];
+  return resp.json();
+}
+
 export async function searchUsers(query: string, opts: PaginationOpts = {}): Promise<UserSearchResult> {
   const params = new URLSearchParams({q: query, page: String(opts.page ?? 1), limit: String(opts.limit ?? 20)});
   const resp = await GET(`${apiBase}/users/search?${params}`);

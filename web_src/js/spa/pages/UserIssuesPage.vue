@@ -142,9 +142,8 @@ import {SvgIcon} from '../../svg.ts';
 import {getCurrentUser, getUserIssues, type Issue, type User} from '../api/index.ts';
 
 const route = useRoute();
-const mode = computed<'issues' | 'pulls' | 'milestones'>(() => {
+const mode = computed<'issues' | 'pulls'>(() => {
   if (route.path === '/pulls') return 'pulls';
-  if (route.path === '/milestones') return 'milestones';
   return 'issues';
 });
 

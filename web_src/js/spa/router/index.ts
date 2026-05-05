@@ -14,6 +14,7 @@ import TwoFAPage from '../pages/TwoFAPage.vue';
 import OAuthGrantPage from '../pages/OAuthGrantPage.vue';
 import UserProfilePage from '../pages/UserProfilePage.vue';
 import UserIssuesPage from '../pages/UserIssuesPage.vue';
+import UserMilestonesPage from '../pages/UserMilestonesPage.vue';
 import UserSettingsPage from '../pages/UserSettingsPage.vue';
 import NotificationsPage from '../pages/NotificationsPage.vue';
 import AdminPage from '../pages/AdminPage.vue';
@@ -86,7 +87,7 @@ const routes: RouteRecordRaw[] = [
   {path: '/issues', component: UserIssuesPage, meta: {title: 'Issues'}},
   {path: '/issues/:type(your_repositories|assigned|mentioned)', component: UserIssuesPage, meta: {title: 'Issues'}},
   {path: '/pulls', component: UserIssuesPage, meta: {title: 'Pull Requests'}},
-  {path: '/milestones', component: UserIssuesPage, meta: {title: 'Milestones'}},
+  {path: '/milestones', component: UserMilestonesPage, meta: {title: 'Milestones'}},
 
   // ── Notifications ─────────────────────────────────────────────────────────
   {path: '/notifications', component: NotificationsPage, meta: {title: 'Notifications'}},
