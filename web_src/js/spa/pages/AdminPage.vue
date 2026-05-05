@@ -317,16 +317,278 @@
             </div>
           </template>
 
-          <!-- Fallback for unimplemented sections -->
-          <template v-else>
+          <!-- Monitor / Cron -->
+          <template v-else-if="section === 'monitor' && subsection === 'cron'">
             <div class="admin-setting-content">
-              <div class="ui segment">
-                <p>
-                  The <strong>{{ section }}{{ subsection ? `/${subsection}` : '' }}</strong> admin section is not yet fully implemented
-                  in the standalone SPA. Use the Gitea API at
-                  <a :href="`${appSubUrl}/api/v1`" target="_blank" rel="noopener">{{ appSubUrl }}/api/v1</a>
-                  for programmatic access.
-                </p>
+              <h4 class="ui top attached header">Cron Tasks</h4>
+              <div v-if="adminLoading" class="ui active centered inline loader tw-my-4"/>
+              <div v-else-if="adminError" class="ui negative message"><p>{{ adminError }}</p></div>
+              <div v-else class="ui attached table segment">
+                <table class="ui very basic table unstackable tw-mb-0">
+                  <thead>
+                    <tr>
+                      <th/>
+                      <th>Name</th>
+                      <th>Schedule</th>
+                      <th>Next</th>
+                      <th>Previous</th>
+                      <th>Exec Times</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="task in cronTasks" :key="task.name">
+                      <td>
+                        <button class="ui primary small button" @click="runCronTask(task.name)">
+                          <SvgIcon name="octicon-play" :size="14"/>
+                        </button>
+                      </td>
+                      <td>{{ task.name }}</td>
+                      <td><code>{{ task.schedule }}</code></td>
+                      <td>{{ formatDate(task.next) }}</td>
+                      <td>{{ task.prev ? formatDate(task.prev) : '-' }}</td>
+                      <td>{{ task.exec_times }}</td>
+                    </tr>
+                    <tr v-if="!cronTasks.length">
+                      <td class="tw-text-center" colspan="6">No cron tasks found.</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </template>
+
+          <!-- Monitor / Queues -->
+          <template v-else-if="section === 'monitor' && subsection === 'queues'">
+            <div class="admin-setting-content">
+              <h4 class="ui top attached header">Queues</h4>
+              <div class="ui attached segment">
+                <p class="tw-text-secondary">Queue management is handled by the server process. Use the Gitea web interface at <a :href="`${appSubUrl}/-/admin/monitor/queues`" target="_blank" rel="noopener">{{ appSubUrl }}/-/admin/monitor/queues</a> for full queue controls.</p>
+              </div>
+            </div>
+          </template>
+
+          <!-- Monitor / Stacktrace -->
+          <template v-else-if="section === 'monitor' && subsection === 'stacktrace'">
+            <div class="admin-setting-content">
+              <h4 class="ui top attached header">Goroutine Stacktrace</h4>
+              <div class="ui attached segment">
+                <p class="tw-text-secondary">Goroutine stacktrace requires server-side rendering. View it at <a :href="`${appSubUrl}/-/admin/monitor/stacktrace`" target="_blank" rel="noopener">{{ appSubUrl }}/-/admin/monitor/stacktrace</a>.</p>
+              </div>
+            </div>
+          </template>
+
+          <!-- Self Check -->
+          <template v-else-if="section === 'self_check'">
+            <div class="admin-setting-content">
+              <h4 class="ui top attached header">Self Check</h4>
+              <div class="ui attached segment">
+                <p class="tw-text-secondary">Self check runs server-side diagnostics. Visit <a :href="`${appSubUrl}/-/admin/self_check`" target="_blank" rel="noopener">{{ appSubUrl }}/-/admin/self_check</a> for full checks.</p>
+              </div>
+            </div>
+          </template>
+
+          <!-- Authentication Sources -->
+          <template v-else-if="section === 'auths'">
+            <div class="admin-setting-content">
+              <h4 class="ui top attached header">
+                Authentication Sources
+                <div class="ui right">
+                  <a :href="`${appSubUrl}/-/admin/auths/new`" class="ui primary tiny button" target="_blank" rel="noopener">Add Authentication Source</a>
+                </div>
+              </h4>
+              <div class="ui attached segment">
+                <p class="tw-text-secondary">Authentication source management requires server-side forms. Manage at <a :href="`${appSubUrl}/-/admin/auths`" target="_blank" rel="noopener">{{ appSubUrl }}/-/admin/auths</a>.</p>
+              </div>
+            </div>
+          </template>
+
+          <!-- Emails -->
+          <template v-else-if="section === 'emails'">
+            <div class="admin-setting-content">
+              <h4 class="ui top attached header">
+                Email Addresses ({{ adminTotalCount }} total)
+              </h4>
+              <div v-if="adminLoading" class="ui active centered inline loader tw-my-4"/>
+              <div v-else-if="adminError" class="ui negative message"><p>{{ adminError }}</p></div>
+              <template v-else>
+                <div class="ui attached table segment">
+                  <table class="ui very basic table unstackable">
+                    <thead>
+                      <tr>
+                        <th>Username</th>
+                        <th>Full Name</th>
+                        <th>Email</th>
+                        <th>Primary</th>
+                        <th>Activated</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr v-for="e in adminItems as AdminEmail[]" :key="e.email">
+                        <td><RouterLink :to="`/${e.name}`">{{ e.name }}</RouterLink></td>
+                        <td class="gt-ellipsis tw-max-w-48">{{ e.full_name }}</td>
+                        <td class="gt-ellipsis tw-max-w-48">{{ e.email }}</td>
+                        <td><SvgIcon :name="e.is_primary ? 'octicon-check' : 'octicon-x'" :size="16"/></td>
+                        <td><SvgIcon :name="e.is_activated ? 'octicon-check' : 'octicon-x'" :size="16"/></td>
+                      </tr>
+                      <tr v-if="!adminItems.length">
+                        <td class="tw-text-center" colspan="5">No results found.</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+                <div v-if="adminTotalPages > 1" class="ui pagination menu tw-mt-4">
+                  <button class="item" :class="{disabled: adminPage <= 1}" @click="changePage(-1)">Previous</button>
+                  <div class="item">Page {{ adminPage }} of {{ adminTotalPages }}</div>
+                  <button class="item" :class="{disabled: adminPage >= adminTotalPages}" @click="changePage(1)">Next</button>
+                </div>
+              </template>
+            </div>
+          </template>
+
+          <!-- Packages -->
+          <template v-else-if="section === 'packages'">
+            <div class="admin-setting-content">
+              <h4 class="ui top attached header">Packages</h4>
+              <div class="ui attached segment">
+                <p class="tw-text-secondary">Package management is available in the full Gitea interface at <a :href="`${appSubUrl}/-/admin/packages`" target="_blank" rel="noopener">{{ appSubUrl }}/-/admin/packages</a>.</p>
+              </div>
+            </div>
+          </template>
+
+          <!-- Applications (OAuth2) -->
+          <template v-else-if="section === 'applications'">
+            <div class="admin-setting-content">
+              <h4 class="ui top attached header">OAuth2 Applications</h4>
+              <div class="ui attached segment">
+                <p class="tw-text-secondary">Global OAuth2 application management requires server-side forms. Manage at <a :href="`${appSubUrl}/-/admin/applications`" target="_blank" rel="noopener">{{ appSubUrl }}/-/admin/applications</a>.</p>
+              </div>
+            </div>
+          </template>
+
+          <!-- Webhooks -->
+          <template v-else-if="section === 'hooks'">
+            <div class="admin-setting-content">
+              <h4 class="ui top attached header">
+                Global Webhooks ({{ adminTotalCount }} total)
+                <div class="ui right">
+                  <a :href="`${appSubUrl}/-/admin/hooks`" class="ui primary tiny button" target="_blank" rel="noopener">Add Webhook</a>
+                </div>
+              </h4>
+              <div v-if="adminLoading" class="ui active centered inline loader tw-my-4"/>
+              <div v-else-if="adminError" class="ui negative message"><p>{{ adminError }}</p></div>
+              <template v-else>
+                <div class="ui attached table segment">
+                  <table class="ui very basic table unstackable">
+                    <thead>
+                      <tr>
+                        <th>Type</th>
+                        <th>URL</th>
+                        <th>Active</th>
+                        <th>Created</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr v-for="hook in adminItems as AdminHook[]" :key="hook.id">
+                        <td>{{ hook.type }}</td>
+                        <td class="gt-ellipsis tw-max-w-xs">{{ hook.config?.url }}</td>
+                        <td><SvgIcon :name="hook.active ? 'octicon-check' : 'octicon-x'" :size="16"/></td>
+                        <td>{{ formatDate(hook.created) }}</td>
+                      </tr>
+                      <tr v-if="!adminItems.length">
+                        <td class="tw-text-center" colspan="4">No webhooks found.</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+                <div v-if="adminTotalPages > 1" class="ui pagination menu tw-mt-4">
+                  <button class="item" :class="{disabled: adminPage <= 1}" @click="changePage(-1)">Previous</button>
+                  <div class="item">Page {{ adminPage }} of {{ adminTotalPages }}</div>
+                  <button class="item" :class="{disabled: adminPage >= adminTotalPages}" @click="changePage(1)">Next</button>
+                </div>
+              </template>
+            </div>
+          </template>
+
+          <!-- Actions / Runners -->
+          <template v-else-if="section === 'actions' && subsection === 'runners'">
+            <div class="admin-setting-content">
+              <h4 class="ui top attached header">
+                Global Runners ({{ adminTotalCount }} total)
+              </h4>
+              <div v-if="adminLoading" class="ui active centered inline loader tw-my-4"/>
+              <div v-else-if="adminError" class="ui negative message"><p>{{ adminError }}</p></div>
+              <template v-else>
+                <div class="ui attached table segment">
+                  <table class="ui very basic table unstackable">
+                    <thead>
+                      <tr>
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th>Labels</th>
+                        <th>Status</th>
+                        <th>State</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr v-for="runner in adminItems as AdminRunner[]" :key="runner.id">
+                        <td>{{ runner.id }}</td>
+                        <td>{{ runner.name }}</td>
+                        <td>{{ runner.labels?.map((l) => l.name).join(', ') || '-' }}</td>
+                        <td>{{ runner.status }}</td>
+                        <td>{{ runner.busy ? 'Busy' : runner.disabled ? 'Disabled' : 'Idle' }}</td>
+                      </tr>
+                      <tr v-if="!adminItems.length">
+                        <td class="tw-text-center" colspan="5">No runners found.</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+                <div v-if="adminTotalPages > 1" class="ui pagination menu tw-mt-4">
+                  <button class="item" :class="{disabled: adminPage <= 1}" @click="changePage(-1)">Previous</button>
+                  <div class="item">Page {{ adminPage }} of {{ adminTotalPages }}</div>
+                  <button class="item" :class="{disabled: adminPage >= adminTotalPages}" @click="changePage(1)">Next</button>
+                </div>
+              </template>
+            </div>
+          </template>
+
+          <!-- Actions / Variables -->
+          <template v-else-if="section === 'actions' && subsection === 'variables'">
+            <div class="admin-setting-content">
+              <h4 class="ui top attached header">Global Variables</h4>
+              <div class="ui attached segment">
+                <p class="tw-text-secondary">Global Actions variable management is available in the full Gitea interface at <a :href="`${appSubUrl}/-/admin/actions/variables`" target="_blank" rel="noopener">{{ appSubUrl }}/-/admin/actions/variables</a>.</p>
+              </div>
+            </div>
+          </template>
+
+          <!-- Config Summary -->
+          <template v-else-if="section === 'config' && !subsection">
+            <div class="admin-setting-content">
+              <h4 class="ui top attached header">Server Configuration Summary</h4>
+              <div v-if="adminLoading" class="ui active centered inline loader tw-my-4"/>
+              <div v-else class="ui attached segment">
+                <p class="tw-text-secondary">Configuration details are available in the full Gitea interface at <a :href="`${appSubUrl}/-/admin/config`" target="_blank" rel="noopener">{{ appSubUrl }}/-/admin/config</a>.</p>
+              </div>
+            </div>
+          </template>
+
+          <!-- Config Settings -->
+          <template v-else-if="section === 'config' && subsection === 'settings'">
+            <div class="admin-setting-content">
+              <h4 class="ui top attached header">Configuration Settings</h4>
+              <div class="ui attached segment">
+                <p class="tw-text-secondary">Configuration settings require server-side forms. Manage at <a :href="`${appSubUrl}/-/admin/config/settings`" target="_blank" rel="noopener">{{ appSubUrl }}/-/admin/config/settings</a>.</p>
+              </div>
+            </div>
+          </template>
+
+          <!-- Notices -->
+          <template v-else-if="section === 'notices'">
+            <div class="admin-setting-content">
+              <h4 class="ui top attached header">System Notices</h4>
+              <div class="ui attached segment">
+                <p class="tw-text-secondary">System notice management is available in the full Gitea interface at <a :href="`${appSubUrl}/-/admin/notices`" target="_blank" rel="noopener">{{ appSubUrl }}/-/admin/notices</a>.</p>
               </div>
             </div>
           </template>
@@ -340,8 +602,16 @@
 import {ref, computed, watch, onMounted} from 'vue';
 import {RouterLink, useRoute} from 'vue-router';
 import AppLayout from '../layouts/AppLayout.vue';
+import {SvgIcon} from '../../svg.ts';
 import {appSubUrl, apiBase} from '../spaconfig.ts';
-import {listAdminUsers, listAdminOrgs, listAdminRepos, getStoredToken, type User, type Repository} from '../api/index.ts';
+import {
+  listAdminUsers, listAdminOrgs, listAdminRepos, listAdminEmails, listAdminHooks,
+  listAdminRunners,
+  listAdminCronTasks, runAdminCronTask,
+  getStoredToken,
+  type User, type Repository, type AdminEmail, type AdminHook, type AdminRunner,
+  type CronTask,
+} from '../api/index.ts';
 
 const route = useRoute();
 
@@ -354,7 +624,7 @@ function isInSection(s: string): boolean {
 
 const adminLoading = ref(false);
 const adminError = ref('');
-const adminItems = ref<User[] | Repository[]>([]);
+const adminItems = ref<User[] | Repository[] | AdminEmail[] | AdminHook[] | AdminRunner[]>([]);
 const adminPage = ref(1);
 const adminTotalCount = ref(0);
 const adminPageSize = 20;
@@ -363,6 +633,8 @@ const adminTotalPages = computed(() => Math.max(1, Math.ceil(adminTotalCount.val
 const statsLoading = ref(false);
 const statsError = ref('');
 const systemStats = ref<Record<string, number>>({});
+
+const cronTasks = ref<CronTask[]>([]);
 
 function formatDate(d: string): string {
   return new Date(d).toLocaleDateString();
@@ -385,6 +657,15 @@ async function loadStats() {
   }
 }
 
+async function runCronTask(name: string) {
+  try {
+    await runAdminCronTask(name);
+    await loadSection();
+  } catch (e) {
+    adminError.value = String(e);
+  }
+}
+
 async function loadSection() {
   const sec = section.value;
   const sub = subsection.value;
@@ -393,7 +674,9 @@ async function loadSection() {
     await loadStats();
   }
 
-  if (!sec || sec === 'config' || sec === 'monitor' || sec === 'actions' || sec === 'notices' || sec === 'self_check' || sec === 'auths' || sec === 'emails' || sec === 'packages' || sec === 'hooks' || sec === 'applications') {
+  if (!sec || sec === 'self_check' || sec === 'auths' || sec === 'applications' ||
+      sec === 'packages' || sec === 'notices' || (sec === 'actions' && sub === 'variables') ||
+      (sec === 'config') || (sec === 'monitor' && (sub === 'queues' || sub === 'stacktrace'))) {
     return;
   }
 
@@ -412,6 +695,22 @@ async function loadSection() {
       const result = await listAdminRepos({page: adminPage.value, limit: adminPageSize});
       adminItems.value = result.data;
       adminTotalCount.value = result.totalCount;
+    } else if (sec === 'emails') {
+      const result = await listAdminEmails({page: adminPage.value, limit: adminPageSize});
+      adminItems.value = result.data;
+      adminTotalCount.value = result.totalCount;
+    } else if (sec === 'hooks') {
+      const result = await listAdminHooks({page: adminPage.value, limit: adminPageSize});
+      adminItems.value = result.data;
+      adminTotalCount.value = result.totalCount;
+    } else if (sec === 'actions' && sub === 'runners') {
+      const result = await listAdminRunners({page: adminPage.value, limit: adminPageSize});
+      adminItems.value = result.data;
+      adminTotalCount.value = result.totalCount;
+    } else if (sec === 'monitor' && sub === 'cron') {
+      const tasks = await listAdminCronTasks();
+      cronTasks.value = tasks;
+      adminTotalCount.value = tasks.length;
     }
   } catch (e) {
     const msg = String(e);

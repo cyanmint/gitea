@@ -1050,3 +1050,127 @@ export async function revokeOAuth2Grant(id: number): Promise<void> {
   const resp = await DELETE(`${apiBase}/user/applications/grants/${id}`);
   if (!resp.ok) throw new Error(`Failed to revoke OAuth2 grant: ${resp.status}`);
 }
+
+// ---- Admin API ----
+
+export type CronTask = {
+  name: string;
+  schedule: string;
+  next: string;
+  prev: string;
+  exec_times: number;
+};
+
+export async function listAdminCronTasks(): Promise<CronTask[]> {
+  const resp = await GET(`${apiBase}/admin/cron?limit=50`);
+  if (!resp.ok) throw new Error(`Failed to list cron tasks: ${resp.status}`);
+  return resp.json() as Promise<CronTask[]>;
+}
+
+export async function runAdminCronTask(task: string): Promise<void> {
+  const resp = await POST(`${apiBase}/admin/cron/${encodeURIComponent(task)}`, {});
+  if (!resp.ok) throw new Error(`Failed to run cron task: ${resp.status}`);
+}
+
+export type AdminEmail = {
+  email: string;
+  is_primary: boolean;
+  is_activated: boolean;
+  name: string;
+  full_name: string;
+};
+
+export async function listAdminEmails(opts: PaginationOpts = {}): Promise<{data: AdminEmail[]; totalCount: number}> {
+  const params = new URLSearchParams({page: String(opts.page ?? 1), limit: String(opts.limit ?? 20)});
+  const resp = await GET(`${apiBase}/admin/emails?${params}`);
+  if (!resp.ok) throw new Error(`Failed to list emails: ${resp.status}`);
+  const data: AdminEmail[] = await resp.json();
+  return {data, totalCount: parseInt(resp.headers.get('X-Total-Count') ?? String(data.length), 10)};
+}
+
+export type AdminHook = Webhook;
+
+export async function listAdminHooks(opts: PaginationOpts = {}): Promise<{data: AdminHook[]; totalCount: number}> {
+  const params = new URLSearchParams({page: String(opts.page ?? 1), limit: String(opts.limit ?? 20)});
+  const resp = await GET(`${apiBase}/admin/hooks?${params}`);
+  if (!resp.ok) throw new Error(`Failed to list admin hooks: ${resp.status}`);
+  const data: AdminHook[] = await resp.json();
+  return {data, totalCount: parseInt(resp.headers.get('X-Total-Count') ?? String(data.length), 10)};
+}
+
+export type AdminRunner = ActionRunner;
+
+export async function listAdminRunners(opts: PaginationOpts = {}): Promise<{data: AdminRunner[]; totalCount: number}> {
+  const params = new URLSearchParams({page: String(opts.page ?? 1), limit: String(opts.limit ?? 20)});
+  const resp = await GET(`${apiBase}/admin/actions/runners?${params}`);
+  if (!resp.ok) throw new Error(`Failed to list admin runners: ${resp.status}`);
+  const data: AdminRunner[] = await resp.json();
+  return {data, totalCount: parseInt(resp.headers.get('X-Total-Count') ?? String(data.length), 10)};
+}
+
+export async function deleteAdminRunner(id: number): Promise<void> {
+  const resp = await DELETE(`${apiBase}/admin/actions/runners/${id}`);
+  if (!resp.ok) throw new Error(`Failed to delete admin runner: ${resp.status}`);
+}
+
+export type AdminVariable = ActionVariable;
+
+export async function listAdminVariables(opts: PaginationOpts = {}): Promise<{data: AdminVariable[]; totalCount: number}> {
+  const params = new URLSearchParams({page: String(opts.page ?? 1), limit: String(opts.limit ?? 20)});
+  const resp = await GET(`${apiBase}/admin/actions/variables?${params}`);
+  if (!resp.ok) throw new Error(`Failed to list admin variables: ${resp.status}`);
+  const data: AdminVariable[] = await resp.json();
+  return {data, totalCount: parseInt(resp.headers.get('X-Total-Count') ?? String(data.length), 10)};
+}
+
+export type AdminPackage = {
+  id: number;
+  owner: User;
+  repo: Repository | null;
+  creator: User;
+  type: string;
+  name: string;
+  version: string;
+  created_at: string;
+};
+
+export async function listAdminPackages(opts: PaginationOpts = {}): Promise<{data: AdminPackage[]; totalCount: number}> {
+  const params = new URLSearchParams({page: String(opts.page ?? 1), limit: String(opts.limit ?? 20)});
+  const resp = await GET(`${apiBase}/packages/search?${params}`);
+  if (!resp.ok) throw new Error(`Failed to list packages: ${resp.status}`);
+  const data: AdminPackage[] = await resp.json();
+  return {data, totalCount: parseInt(resp.headers.get('X-Total-Count') ?? String(data.length), 10)};
+}
+
+export type AdminApplication = OAuth2Application & {user?: User};
+
+export async function listAdminApplications(opts: PaginationOpts = {}): Promise<{data: AdminApplication[]; totalCount: number}> {
+  const params = new URLSearchParams({page: String(opts.page ?? 1), limit: String(opts.limit ?? 20)});
+  const resp = await GET(`${apiBase}/admin/apps?${params}`);
+  if (!resp.ok) throw new Error(`Failed to list admin applications: ${resp.status}`);
+  const data: AdminApplication[] = await resp.json();
+  return {data, totalCount: parseInt(resp.headers.get('X-Total-Count') ?? String(data.length), 10)};
+}
+
+export type AdminNotice = {
+  id: number;
+  type: string;
+  created_at: string;
+  description: string;
+};
+
+export async function listAdminNotices(opts: PaginationOpts = {}): Promise<{data: AdminNotice[]; totalCount: number}> {
+  const params = new URLSearchParams({page: String(opts.page ?? 1), limit: String(opts.limit ?? 20)});
+  const resp = await GET(`${apiBase}/admin/notices?${params}`);
+  if (!resp.ok) throw new Error(`Failed to list notices: ${resp.status}`);
+  const data: AdminNotice[] = await resp.json();
+  return {data, totalCount: parseInt(resp.headers.get('X-Total-Count') ?? String(data.length), 10)};
+}
+
+export type AuthSource = {
+  id: number;
+  name: string;
+  type: number;
+  is_active: boolean;
+  is_sync_enabled: boolean;
+};
