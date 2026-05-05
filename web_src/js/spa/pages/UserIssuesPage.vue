@@ -1,10 +1,10 @@
 <template>
-  <AppLayout pageClass="dashboard issues">
+  <AppLayout page-class="dashboard issues">
     <div v-if="!currentUser" class="ui container tw-py-8">
       <div class="ui active centered inline loader"/>
     </div>
     <template v-else>
-      <DashboardNav :current-user="currentUser" :mode="mode" />
+      <DashboardNav :current-user="currentUser" :mode="mode"/>
       <div class="ui container">
         <div class="flex-container">
           <!-- Filter sidebar — matches templates/user/dashboard/issues.tmpl -->
@@ -40,11 +40,11 @@
             <div class="list-header">
               <div class="small-menu-items ui compact tiny menu list-header-toggle flex-items-block">
                 <a class="item" :class="{active: state === 'open'}" @click="setFilter('open')">
-                  <SvgIcon name="octicon-issue-opened" :size="16" />
+                  <SvgIcon name="octicon-issue-opened" :size="16"/>
                   {{ openCount }}&nbsp;Open
                 </a>
                 <a class="item" :class="{active: state === 'closed'}" @click="setFilter('closed')">
-                  <SvgIcon name="octicon-issue-closed" :size="16" />
+                  <SvgIcon name="octicon-issue-closed" :size="16"/>
                   {{ closedCount }}&nbsp;Closed
                 </a>
               </div>
@@ -56,9 +56,9 @@
               <div class="list-header-filters ui secondary menu tw-m-0">
                 <div class="item ui small dropdown jump" :class="{active: sortMenuOpen}" ref="sortDropdownEl" @click.stop="toggleSortMenu">
                   <span class="text tw-whitespace-nowrap">
-                    Sort <SvgIcon name="octicon-triangle-down" :size="14" class="dropdown icon" />
+                    Sort <SvgIcon name="octicon-triangle-down" :size="14" class="dropdown icon"/>
                   </span>
-                  <div class="menu" v-show="sortMenuOpen">
+                  <div class="menu left" v-show="sortMenuOpen">
                     <a class="item" :class="{active: sortType === 'recentupdate'}" @click="setSort('recentupdate')">Recently updated</a>
                     <a class="item" :class="{active: sortType === 'latest'}" @click="setSort('latest')">Newest</a>
                     <a class="item" :class="{active: sortType === 'oldest'}" @click="setSort('oldest')">Oldest</a>
@@ -83,10 +83,10 @@
               <div v-for="item in items" :key="item.id" class="item">
                 <div class="item-leading">
                   <span v-if="item.state === 'open'" class="tw-text-green-600">
-                    <SvgIcon :name="mode === 'pulls' ? 'octicon-git-pull-request' : 'octicon-issue-opened'" :size="16" />
+                    <SvgIcon :name="mode === 'pulls' ? 'octicon-git-pull-request' : 'octicon-issue-opened'" :size="16"/>
                   </span>
                   <span v-else class="tw-text-purple-600">
-                    <SvgIcon :name="mode === 'pulls' ? 'octicon-git-merge' : 'octicon-issue-closed'" :size="16" />
+                    <SvgIcon :name="mode === 'pulls' ? 'octicon-git-merge' : 'octicon-issue-closed'" :size="16"/>
                   </span>
                 </div>
                 <div class="item-main">
@@ -106,7 +106,7 @@
                     </div>
                     <div v-if="item.comments" class="item-trailing muted-links">
                       <span class="flex-text-inline">
-                        <SvgIcon name="octicon-comment" :size="16" />
+                        <SvgIcon name="octicon-comment" :size="16"/>
                         {{ item.comments }}
                       </span>
                     </div>
@@ -134,7 +134,7 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, watch, onMounted} from 'vue';
+import {ref, computed, watch, onMounted, onUnmounted} from 'vue';
 import {useRoute, RouterLink} from 'vue-router';
 import AppLayout from '../layouts/AppLayout.vue';
 import DashboardNav from '../components/DashboardNav.vue';
@@ -144,8 +144,21 @@ import {getCurrentUser, getUserIssues, type Issue, type User} from '../api/index
 const route = useRoute();
 const mode = computed<'issues' | 'pulls' | 'milestones'>(() => {
   if (route.path === '/pulls') return 'pulls';
+  if (route.path === '/milestones') return 'milestones';
   return 'issues';
 });
+
+const sortMenuOpen = ref(false);
+const sortDropdownEl = ref<HTMLElement | null>(null);
+
+function toggleSortMenu() {
+  sortMenuOpen.value = !sortMenuOpen.value;
+}
+
+function onDocClick(e: MouseEvent) {
+  const target = e.target as Node;
+  if (sortDropdownEl.value && !sortDropdownEl.value.contains(target)) sortMenuOpen.value = false;
+}
 
 const currentUser = ref<User | null>(null);
 const state = ref<'open' | 'closed'>('open');
@@ -257,5 +270,10 @@ watch(mode, () => {
 onMounted(async () => {
   currentUser.value = await getCurrentUser();
   await load();
+  document.addEventListener('click', onDocClick);
+});
+
+onUnmounted(() => {
+  document.removeEventListener('click', onDocClick);
 });
 </script>

@@ -1,16 +1,16 @@
 <template>
-  <AppLayout :pageClass="`explore ${activeTab === 'repos' ? 'repositories' : activeTab === 'users' ? 'users' : 'organizations'}`">
+  <AppLayout :page-class="`explore ${activeTab === 'repos' ? 'repositories' : activeTab === 'users' ? 'users' : 'organizations'}`">
     <!-- Explore top nav — matches templates/explore/navbar.tmpl -->
     <div class="ui secondary pointing tabular top attached borderless menu secondary-nav">
       <div class="overflow-menu-items tw-justify-center">
         <RouterLink to="/explore/repos" class="item" :class="{active: activeTab === 'repos'}">
-          <SvgIcon name="octicon-repo" :size="16" /> Repositories
+          <SvgIcon name="octicon-repo" :size="16"/> Repositories
         </RouterLink>
         <RouterLink to="/explore/users" class="item" :class="{active: activeTab === 'users'}">
-          <SvgIcon name="octicon-person" :size="16" /> Users
+          <SvgIcon name="octicon-person" :size="16"/> Users
         </RouterLink>
         <RouterLink to="/explore/organizations" class="item" :class="{active: activeTab === 'orgs'}">
-          <SvgIcon name="octicon-organization" :size="16" /> Organizations
+          <SvgIcon name="octicon-organization" :size="16"/> Organizations
         </RouterLink>
       </div>
     </div>
@@ -28,14 +28,14 @@
             @keydown.enter="loadData"
           >
           <button class="ui icon button" @click="loadData">
-            <SvgIcon name="octicon-search" :size="16" />
+            <SvgIcon name="octicon-search" :size="16"/>
           </button>
         </div>
         <!-- Sort dropdown -->
         <div class="item ui small dropdown jump" :class="{active: sortMenuOpen}" ref="sortDropdownEl" @click.stop="toggleSortMenu">
           <span class="text">Sort: {{ sortLabel }}</span>
-          <SvgIcon name="octicon-triangle-down" :size="14" class="dropdown icon" />
-          <div class="menu" :class="{visible: sortMenuOpen}" v-show="sortMenuOpen">
+          <SvgIcon name="octicon-triangle-down" :size="14" class="dropdown icon"/>
+          <div class="menu left" :class="{visible: sortMenuOpen}" v-show="sortMenuOpen">
             <a class="item" :class="{active: sort === 'newest'}" @click="setSort('newest')">Newest</a>
             <a class="item" :class="{active: sort === 'oldest'}" @click="setSort('oldest')">Oldest</a>
             <a class="item" :class="{active: sort === 'recentupdate'}" @click="setSort('recentupdate')">Recently Updated</a>
@@ -78,11 +78,11 @@
                     {{ repo.language }}
                   </span>
                   <RouterLink class="flex-text-inline" :to="`/${repo.full_name}/stars`">
-                    <span class="tw-contents" aria-label="Stars"><SvgIcon name="octicon-star" :size="16" /></span>
+                    <span class="tw-contents" aria-label="Stars"><SvgIcon name="octicon-star" :size="16"/></span>
                     <span>{{ repo.stars_count }}</span>
                   </RouterLink>
                   <RouterLink class="flex-text-inline" :to="`/${repo.full_name}/forks`">
-                    <span class="tw-contents" aria-label="Forks"><SvgIcon name="octicon-git-branch" :size="16" /></span>
+                    <span class="tw-contents" aria-label="Forks"><SvgIcon name="octicon-git-branch" :size="16"/></span>
                     <span>{{ repo.forks_count }}</span>
                   </RouterLink>
                 </div>
