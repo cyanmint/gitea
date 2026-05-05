@@ -759,6 +759,13 @@ export async function getRepoActivityFeeds(owner: string, repo: string, opts: Pa
   return resp.json();
 }
 
+export async function getUserActivityFeeds(username: string, opts: PaginationOpts = {}): Promise<ActivityFeed[]> {
+  const params = new URLSearchParams({page: String(opts.page ?? 1), limit: String(opts.limit ?? 20)});
+  const resp = await GET(`${apiBase}/users/${encodeURIComponent(username)}/activities/feeds?${params}`);
+  if (!resp.ok) throw new Error(`Failed to fetch user activity feeds: ${resp.status}`);
+  return resp.json();
+}
+
 // ---- Password change / account deletion ----
 
 export async function changePassword(oldPassword: string, newPassword: string): Promise<void> {
