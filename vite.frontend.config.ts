@@ -14,6 +14,7 @@
 
 import {defineConfig} from 'vite';
 import vuePlugin from '@vitejs/plugin-vue';
+import {stringPlugin} from 'vite-string-plugin';
 import {join} from 'node:path';
 import tailwindcss from 'tailwindcss';
 import tailwindConfig from './tailwind.config.ts';
@@ -36,6 +37,7 @@ export default defineConfig({
   // produced by assetUrlPrefix='.' in spaconfig.ts.
   publicDir: join(import.meta.dirname, 'public/assets'),
   plugins: [
+    stringPlugin(),
     vuePlugin({
       template: {
         compilerOptions: {
