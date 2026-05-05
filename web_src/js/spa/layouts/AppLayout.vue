@@ -109,7 +109,7 @@
   </nav>
 
   <!-- ── Page content ───────────────────────────────────────────────────── -->
-  <div class="page-content">
+  <div role="main" :class="pageClass ? `page-content ${pageClass}` : 'page-content'">
     <slot/>
   </div>
 
@@ -131,7 +131,9 @@ import {ref, onMounted, onUnmounted} from 'vue';
 import {RouterLink, useRoute} from 'vue-router';
 import {getCurrentUser, logout, type User} from '../api/index.ts';
 import {assetUrlPrefix, apiBase, appSubUrl} from '../spaconfig.ts';
-import {SvgIcon} from '../../../js/svg.ts';
+import {SvgIcon} from '../../svg.ts';
+
+defineProps<{pageClass?: string}>();
 
 const authLoading = ref(true);
 const currentUser = ref<User | null>(null);

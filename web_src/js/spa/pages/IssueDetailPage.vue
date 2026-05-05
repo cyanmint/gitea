@@ -1,6 +1,38 @@
 <template>
-  <AppLayout>
-    <div class="ui container tw-py-4">
+  <AppLayout pageClass="repository view issue pull">
+    <!-- Secondary nav (repo header + tabs) -->
+    <div class="secondary-nav">
+      <div class="ui container">
+        <div class="repo-header flex-left-right">
+          <div class="flex-text-block">
+            <div class="flex-text-block tw-flex-wrap tw-text-18">
+              <RouterLink class="muted tw-font-normal" :to="`/${owner}`">{{ owner }}</RouterLink>/<RouterLink class="muted" :to="`/${owner}/${repoName}`">{{ repoName }}</RouterLink>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="ui container">
+        <overflow-menu class="ui secondary pointing menu">
+          <div class="overflow-menu-items">
+            <RouterLink :to="`/${owner}/${repoName}`" class="item">
+              <SvgIcon name="octicon-code" :size="16" /> Code
+            </RouterLink>
+            <RouterLink :to="`/${owner}/${repoName}/issues`" class="item active">
+              <SvgIcon name="octicon-issue-opened" :size="16" /> Issues
+            </RouterLink>
+            <RouterLink :to="`/${owner}/${repoName}/pulls`" class="item">
+              <SvgIcon name="octicon-git-pull-request" :size="16" /> Pull Requests
+            </RouterLink>
+            <RouterLink :to="`/${owner}/${repoName}/releases`" class="item">
+              <SvgIcon name="octicon-tag" :size="16" /> Releases
+            </RouterLink>
+          </div>
+        </overflow-menu>
+      </div>
+      <div class="ui tabs divider"/>
+    </div>
+
+    <div class="ui container">
       <!-- Loading / error -->
       <div v-if="loading" class="tw-py-16 tw-text-center">
         <div class="ui active centered inline loader"/>
@@ -11,61 +43,60 @@
         <RouterLink :to="`/${owner}/${repoName}/issues`" class="ui button tw-mt-2">Back to Issues</RouterLink>
       </div>
 
+      <!-- Issue view — matches templates/repo/issue/view_title.tmpl + view_content.tmpl -->
       <template v-else-if="issue">
-        <!-- Issue header -->
-        <div class="tw-mb-4">
-          <div class="tw-flex tw-items-center tw-gap-2 tw-text-sm tw-text-gray-500 tw-mb-2">
-            <RouterLink :to="`/${owner}/${repoName}`" class="hover:tw-underline tw-text-blue-600">{{ owner }}/{{ repoName }}</RouterLink>
-            <span>/</span>
-            <RouterLink :to="`/${owner}/${repoName}/issues`" class="hover:tw-underline tw-text-blue-600">Issues</RouterLink>
-            <span>/</span>
-            <span>#{{ issue.number }}</span>
-          </div>
-
-          <h1 class="tw-text-2xl tw-font-bold tw-mb-2">
+        <!-- Issue title header -->
+        <div class="issue-title">
+          <h1 class="tw-text-2xl">
             {{ issue.title }}
-            <span class="tw-text-gray-400 tw-font-normal">#{{ issue.number }}</span>
+            <span class="index tw-font-normal">#{{ issue.number }}</span>
           </h1>
-
-          <div class="tw-flex tw-items-center tw-gap-3">
+          <div class="issue-title-meta">
             <span
               class="ui label"
-              :class="issue.state === 'open' ? 'green' : 'red'"
+              :class="issue.state === 'open' ? 'green' : 'purple'"
             >
-              {{ issue.state === 'open' ? '🟢 Open' : '✅ Closed' }}
+              <SvgIcon :name="issue.state === 'open' ? 'octicon-issue-opened' : 'octicon-issue-closed'" :size="16" />
+              {{ issue.state === 'open' ? 'Open' : 'Closed' }}
             </span>
-            <span class="tw-text-sm tw-text-gray-500">
-              Opened {{ timeAgo(issue.created_at) }} by
-              <a :href="`${appSubUrl}/${issue.user.login}`" class="tw-text-blue-600 hover:tw-underline tw-font-medium">{{ issue.user.login }}</a>
+            <span class="tw-ml-2">
+              <RouterLink :to="`/${issue.user.login}`" class="author">{{ issue.user.login }}</RouterLink>
+              opened this issue {{ timeAgo(issue.created_at) }}
               · {{ issue.comments }} comment{{ issue.comments === 1 ? '' : 's' }}
             </span>
           </div>
         </div>
 
-        <div class="tw-flex tw-gap-6">
-          <!-- Main content -->
-          <div class="tw-flex-1">
-            <!-- Issue body -->
-            <div class="tw-border tw-rounded tw-mb-4">
-              <div class="tw-bg-gray-50 tw-px-4 tw-py-2 tw-border-b tw-flex tw-items-center tw-gap-2 tw-text-sm">
-                <img :src="issue.user.avatar_url" :alt="issue.user.login" class="tw-w-6 tw-h-6 tw-rounded-full">
-                <a :href="`${appSubUrl}/${issue.user.login}`" class="tw-font-medium tw-text-blue-600 hover:tw-underline">{{ issue.user.login }}</a>
-                <span class="tw-text-gray-400">commented {{ timeAgo(issue.created_at) }}</span>
-              </div>
-              <div class="tw-px-4 tw-py-4 tw-text-sm tw-leading-relaxed tw-whitespace-pre-wrap">
-                {{ issue.body || '_No description provided._' }}
+        <div class="ui divider"/>
+
+        <!-- Content + sidebar layout -->
+        <div class="issue-content">
+          <div class="comment-list">
+            <!-- Issue body comment -->
+            <div class="comment">
+              <div class="content">
+                <div class="ui attached header comment-header tw-flex tw-items-center tw-gap-2">
+                  <img :src="issue.user.avatar_url" :alt="issue.user.login" class="ui avatar image" width="24" height="24">
+                  <RouterLink :to="`/${issue.user.login}`" class="author">{{ issue.user.login }}</RouterLink>
+                  <span class="text muted">commented {{ timeAgo(issue.created_at) }}</span>
+                </div>
+                <div class="ui attached segment markup">
+                  <p>{{ issue.body || 'No description provided.' }}</p>
+                </div>
               </div>
             </div>
 
             <!-- Comments -->
-            <div v-for="comment in comments" :key="comment.id" class="tw-border tw-rounded tw-mb-4">
-              <div class="tw-bg-gray-50 tw-px-4 tw-py-2 tw-border-b tw-flex tw-items-center tw-gap-2 tw-text-sm">
-                <img :src="comment.user.avatar_url" :alt="comment.user.login" class="tw-w-6 tw-h-6 tw-rounded-full">
-                <a :href="`${appSubUrl}/${comment.user.login}`" class="tw-font-medium tw-text-blue-600 hover:tw-underline">{{ comment.user.login }}</a>
-                <span class="tw-text-gray-400">commented {{ timeAgo(comment.created_at) }}</span>
-              </div>
-              <div class="tw-px-4 tw-py-4 tw-text-sm tw-leading-relaxed tw-whitespace-pre-wrap">
-                {{ comment.body || '_Empty comment._' }}
+            <div v-for="comment in comments" :key="comment.id" class="comment">
+              <div class="content">
+                <div class="ui attached header comment-header tw-flex tw-items-center tw-gap-2">
+                  <img :src="comment.user.avatar_url" :alt="comment.user.login" class="ui avatar image" width="24" height="24">
+                  <RouterLink :to="`/${comment.user.login}`" class="author">{{ comment.user.login }}</RouterLink>
+                  <span class="text muted">commented {{ timeAgo(comment.created_at) }}</span>
+                </div>
+                <div class="ui attached segment markup">
+                  <p>{{ comment.body || 'Empty comment.' }}</p>
+                </div>
               </div>
             </div>
 
@@ -73,51 +104,54 @@
               <div class="ui active centered inline loader"/>
             </div>
 
-            <!-- Add comment form (only for signed-in users) -->
-            <div v-if="currentUser" class="tw-border tw-rounded tw-mt-4">
-              <div class="tw-bg-gray-50 tw-px-4 tw-py-2 tw-border-b tw-flex tw-items-center tw-gap-2 tw-text-sm">
-                <img :src="currentUser.avatar_url" :alt="currentUser.login" class="tw-w-6 tw-h-6 tw-rounded-full">
-                <span class="tw-font-medium">{{ currentUser.login }}</span>
-              </div>
-              <div class="tw-px-4 tw-py-4">
-                <div v-if="commentError" class="ui negative message tw-mb-3">
-                  <p>{{ commentError }}</p>
+            <!-- Add comment form (signed-in only) -->
+            <div v-if="currentUser" class="comment">
+              <div class="content">
+                <div class="ui attached header comment-header tw-flex tw-items-center tw-gap-2">
+                  <img :src="currentUser.avatar_url" :alt="currentUser.login" class="ui avatar image" width="24" height="24">
+                  <span class="author">{{ currentUser.login }}</span>
                 </div>
-                <textarea
-                  v-model="newComment"
-                  class="tw-w-full tw-border tw-rounded tw-p-3 tw-text-sm tw-resize-y tw-min-h-24 focus:tw-outline-none focus:tw-ring-1 focus:tw-ring-blue-400"
-                  placeholder="Leave a comment…"
-                  rows="4"
-                />
-                <div class="tw-mt-3 tw-flex tw-justify-end">
-                  <button
-                    class="ui primary button"
-                    :class="{loading: submittingComment}"
-                    :disabled="submittingComment || !newComment.trim()"
-                    @click="submitComment"
-                  >
-                    Comment
-                  </button>
+                <div class="ui attached segment">
+                  <div v-if="commentError" class="ui negative message tw-mb-3">
+                    <p>{{ commentError }}</p>
+                  </div>
+                  <textarea
+                    v-model="newComment"
+                    class="ui fluid textarea"
+                    placeholder="Leave a comment…"
+                    rows="4"
+                  />
+                  <div class="tw-mt-3 tw-flex tw-justify-end">
+                    <button
+                      class="ui primary button"
+                      :class="{loading: submittingComment}"
+                      :disabled="submittingComment || !newComment.trim()"
+                      @click="submitComment"
+                    >
+                      Comment
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
 
           <!-- Sidebar -->
-          <div class="tw-w-64 tw-shrink-0">
-            <!-- Labels -->
-            <div class="tw-mb-4">
-              <h4 class="tw-text-xs tw-font-semibold tw-text-gray-500 tw-uppercase tw-mb-2">Labels</h4>
-              <div v-if="issue.labels.length === 0" class="tw-text-sm tw-text-gray-400">None yet</div>
-              <div v-else class="tw-flex tw-flex-wrap tw-gap-1">
-                <span
-                  v-for="label in issue.labels"
-                  :key="label.id"
-                  class="ui mini label"
-                  :style="{background: '#' + label.color}"
-                >
-                  {{ label.name }}
-                </span>
+          <div class="issue-sidebar">
+            <div class="sidebar-item-container">
+              <div class="sidebar-item">
+                <div class="header">Labels</div>
+                <div v-if="issue.labels.length === 0" class="text muted">None yet</div>
+                <div v-else class="label-list">
+                  <span
+                    v-for="label in issue.labels"
+                    :key="label.id"
+                    class="ui label"
+                    :style="{background: '#' + label.color}"
+                  >
+                    {{ label.name }}
+                  </span>
+                </div>
               </div>
             </div>
           </div>
@@ -131,9 +165,8 @@
 import {ref, onMounted} from 'vue';
 import {RouterLink, useRoute} from 'vue-router';
 import AppLayout from '../layouts/AppLayout.vue';
+import {SvgIcon} from '../../svg.ts';
 import {getIssue, getIssueComments, getCurrentUser, createIssueComment, type Issue, type Comment, type User} from '../api/index.ts';
-
-import {appSubUrl} from '../spaconfig.ts';
 
 const route = useRoute();
 const owner = String(route.params.owner);

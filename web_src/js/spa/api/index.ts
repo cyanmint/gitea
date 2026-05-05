@@ -1,6 +1,6 @@
 import {request, GET as _GET, POST as _POST, PATCH as _PATCH, PUT as _PUT, DELETE as _DELETE} from '../../modules/fetch.ts';
 import type {RequestOpts} from '../../types.ts';
-import {apiBase, appSubUrl} from '../spaconfig.ts';
+import {apiBase} from '../spaconfig.ts';
 
 // ---- Token storage ----
 

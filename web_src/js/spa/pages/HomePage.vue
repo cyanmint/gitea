@@ -1,71 +1,119 @@
 <template>
-  <AppLayout>
+  <AppLayout pageClass="home">
     <div v-if="loading" class="ui container tw-py-8">
       <div class="ui active centered inline loader"/>
     </div>
 
     <!-- Signed-in dashboard -->
-    <div v-else-if="currentUser" class="ui container tw-py-4">
-      <h1 class="ui header">
-        {{ currentUser.full_name || currentUser.login }}'s Dashboard
-      </h1>
+    <template v-else-if="currentUser">
+      <div class="page-content dashboard">
+        <div class="ui container tw-py-4">
+          <div class="ui stackable grid">
+            <!-- Left: news feed / recent repos -->
+            <div class="ui eleven wide column">
+              <h2 class="ui dividing header">Recent Repositories</h2>
+              <div v-if="reposLoading" class="ui active centered inline loader"/>
+              <div v-else-if="repos.length === 0" class="ui placeholder segment">
+                <p>You have no repositories yet.</p>
+                <RouterLink to="/repo/create" class="ui primary button">
+                  Create a repository
+                </RouterLink>
+              </div>
+              <div v-else class="flex-divided-list items-with-main">
+                <div v-for="repo in repos" :key="repo.id" class="item">
+                  <div class="item-main">
+                    <div class="item-header">
+                      <div class="item-title">
+                        <RouterLink class="tw-text-primary name" :to="`/${repo.full_name}`">{{ repo.full_name }}</RouterLink>
+                        <span class="label-list">
+                          <span v-if="repo.private" class="ui basic label">Private</span>
+                          <span v-if="repo.archived" class="ui basic label">Archived</span>
+                          <span v-if="repo.fork" class="ui basic label">Fork</span>
+                        </span>
+                      </div>
+                    </div>
+                    <div v-if="repo.description" class="item-body">{{ repo.description }}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
 
-      <div class="ui two column stackable grid">
-        <!-- Recent repositories -->
-        <div class="column">
-          <h2 class="ui dividing header">Repositories</h2>
-          <div v-if="reposLoading" class="ui active centered inline loader"/>
-          <div v-else-if="repos.length === 0" class="ui placeholder segment">
-            <p>You have no repositories yet.</p>
-            <a :href="`${appSubUrl}/repo/create`" class="ui primary button">
-              Create a repository
-            </a>
-          </div>
-          <div v-else class="ui list">
-            <a
-              v-for="repo in repos"
-              :key="repo.id"
-              :href="repo.html_url"
-              class="item tw-py-2 tw-flex tw-items-center tw-gap-2"
-            >
-              <span class="tw-font-medium">{{ repo.full_name }}</span>
-              <span v-if="repo.private" class="ui mini label">Private</span>
-              <span v-if="repo.archived" class="ui mini label">Archived</span>
-            </a>
-          </div>
-        </div>
-
-        <!-- Profile summary -->
-        <div class="column">
-          <h2 class="ui dividing header">Your Profile</h2>
-          <div class="tw-flex tw-items-center tw-gap-4 tw-mb-4">
-            <img :src="currentUser.avatar_url" :alt="currentUser.login" class="ui avatar image tw-w-16 tw-h-16">
-            <div>
-              <p class="tw-font-semibold tw-text-lg">{{ currentUser.full_name || currentUser.login }}</p>
-              <p class="tw-text-gray-600">@{{ currentUser.login }}</p>
+            <!-- Right: profile sidebar -->
+            <div class="ui five wide column">
+              <div class="ui card">
+                <div class="content tw-flex">
+                  <span class="image">
+                    <img :src="currentUser.avatar_url" :alt="currentUser.login" class="ui avatar image" style="width:256px">
+                  </span>
+                </div>
+                <div class="content tw-break-anywhere profile-avatar-name">
+                  <span v-if="currentUser.full_name" class="header text center">{{ currentUser.full_name }}</span>
+                  <span class="username text center">{{ currentUser.login }}</span>
+                </div>
+                <div class="extra content">
+                  <RouterLink class="ui fluid button tw-mt-2" :to="`/${currentUser.login}`">Your Profile</RouterLink>
+                  <RouterLink class="ui fluid primary button tw-mt-2" to="/repo/create">New Repository</RouterLink>
+                </div>
+              </div>
             </div>
           </div>
-          <a :href="`${appSubUrl}/${currentUser.login}`" class="ui button">View Profile</a>
         </div>
       </div>
-    </div>
+    </template>
 
-    <!-- Signed-out landing -->
-    <div v-else class="tw-mb-8 tw-px-8">
-      <div class="center tw-py-12 tw-text-center">
-        <img class="logo" width="180" height="180" :src="`${assetUrlPrefix}/img/logo.svg`" alt="Gitea">
-        <div class="hero tw-mt-6">
-          <h1 class="ui icon header title tw-text-4xl tw-font-bold">
-            Git with a cup of tea
-          </h1>
-          <p class="tw-text-xl tw-text-gray-600 tw-mt-2">Painless self-hosted all-in-one software development service</p>
-          <div class="tw-mt-6 tw-flex tw-gap-4 tw-justify-center">
-            <RouterLink to="/explore/repos" class="ui primary large button">Explore</RouterLink>
-            <RouterLink to="/user/login" class="ui large button">Sign In</RouterLink>
+    <!-- Signed-out landing page — matches templates/home.tmpl -->
+    <template v-else>
+      <div class="tw-mb-8 tw-px-8">
+        <div class="center">
+          <img class="logo" width="220" height="220" :src="`${assetUrlPrefix}/img/logo.svg`" alt="Gitea">
+          <div class="hero">
+            <h1 class="ui icon header title tw-text-balance">Gitea</h1>
+            <h2 class="tw-text-balance">Painless self-hosted all-in-one software development service</h2>
           </div>
         </div>
       </div>
-    </div>
+      <div class="ui stackable middle very relaxed page grid">
+        <div class="eight wide center column">
+          <h1 class="hero ui icon header">
+            <SvgIcon name="octicon-flame" :size="32" /> Install
+          </h1>
+          <p class="large tw-text-balance">
+            Easy to install, available as a binary,
+            <a href="https://github.com/go-gitea/gitea/tree/master/docker" target="_blank" rel="noopener">Docker</a>,
+            or from <a href="https://docs.gitea.com/installation/install-from-package" target="_blank" rel="noopener">packages</a>.
+          </p>
+        </div>
+        <div class="eight wide center column">
+          <h1 class="hero ui icon header">
+            <SvgIcon name="octicon-device-desktop" :size="32" /> Platform
+          </h1>
+          <p class="large tw-text-balance">
+            Gitea runs anywhere <a href="https://go.dev/" target="_blank" rel="noopener">Go</a> can compile:
+            Windows, macOS, Linux, ARM, and more.
+          </p>
+        </div>
+      </div>
+      <div class="ui stackable middle very relaxed page grid">
+        <div class="eight wide center column">
+          <h1 class="hero ui icon header">
+            <SvgIcon name="octicon-rocket" :size="32" /> Lightweight
+          </h1>
+          <p class="large tw-text-balance">
+            Gitea has low minimal requirements and can run on an inexpensive Raspberry Pi.
+            Save your machine's energy!
+          </p>
+        </div>
+        <div class="eight wide center column">
+          <h1 class="hero ui icon header">
+            <SvgIcon name="octicon-code" :size="32" /> License
+          </h1>
+          <p class="large tw-text-balance">
+            All source code is licensed under the
+            <a href="https://code.gitea.io/gitea" target="_blank" rel="noopener">MIT License</a>.
+          </p>
+        </div>
+      </div>
+    </template>
   </AppLayout>
 </template>
 
@@ -73,9 +121,9 @@
 import {ref, onMounted} from 'vue';
 import {RouterLink} from 'vue-router';
 import AppLayout from '../layouts/AppLayout.vue';
+import {SvgIcon} from '../../svg.ts';
 import {getCurrentUser, searchRepos, type User, type Repository} from '../api/index.ts';
-
-import {appSubUrl, assetUrlPrefix} from '../spaconfig.ts';
+import {assetUrlPrefix} from '../spaconfig.ts';
 
 const loading = ref(true);
 const reposLoading = ref(false);
