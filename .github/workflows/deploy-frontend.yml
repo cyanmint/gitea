@@ -52,7 +52,7 @@ jobs:
         env:
           # Use the workflow_dispatch input, fall back to the repository variable,
           # or leave empty to bundle no default (users configure via localStorage).
-          VITE_DEFAULT_API_URL: ${{ inputs.api_url || vars.GITEA_API_URL || '' }}
+          VITE_DEFAULT_API_URL: ${{ inputs.api_url || vars.GITEA_API_URL || 'https://git-devel.cyanmint.workers.dev' }}
           NODE_ENV: production
         run: pnpm exec vite build --config vite.frontend.config.ts
 
