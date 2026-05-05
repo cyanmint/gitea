@@ -1027,6 +1027,7 @@ func Routes() *web.Router {
 			// manage user-level actions features
 			m.Group("/actions", func() {
 				m.Group("/secrets", func() {
+					m.Get("", user.ListSecrets)
 					m.Combo("/{secretname}").
 						Put(bind(api.CreateOrUpdateSecretOption{}), user.CreateOrUpdateSecret).
 						Delete(user.DeleteSecret)

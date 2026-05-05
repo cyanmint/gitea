@@ -893,6 +893,91 @@ export async function leaveOrganization(orgName: string, username: string): Prom
   if (!resp.ok) throw new Error(`Failed to leave organization: ${resp.status}`);
 }
 
+// ---- Actions Secrets (user-level) ----
+
+export type ActionSecret = {
+  name: string;
+  description: string;
+  created_at: string;
+};
+
+export async function listUserSecrets(): Promise<ActionSecret[]> {
+  const resp = await GET(`${apiBase}/user/actions/secrets?limit=50`);
+  if (!resp.ok) throw new Error(`Failed to list secrets: ${resp.status}`);
+  return resp.json() as Promise<ActionSecret[]>;
+}
+
+export async function setUserSecret(name: string, data: string, description?: string): Promise<void> {
+  const resp = await PUT(`${apiBase}/user/actions/secrets/${encodeURIComponent(name)}`, {data: {data, description: description ?? ''}});
+  if (!resp.ok) throw new Error(`Failed to set secret: ${resp.status}`);
+}
+
+export async function deleteUserSecret(name: string): Promise<void> {
+  const resp = await DELETE(`${apiBase}/user/actions/secrets/${encodeURIComponent(name)}`);
+  if (!resp.ok) throw new Error(`Failed to delete secret: ${resp.status}`);
+}
+
+// ---- Actions Variables (user-level) ----
+
+export type ActionVariable = {
+  name: string;
+  data: string;
+  description: string;
+};
+
+export async function listUserVariables(): Promise<ActionVariable[]> {
+  const resp = await GET(`${apiBase}/user/actions/variables?limit=50`);
+  if (!resp.ok) throw new Error(`Failed to list variables: ${resp.status}`);
+  return resp.json() as Promise<ActionVariable[]>;
+}
+
+export async function createUserVariable(name: string, value: string, description?: string): Promise<void> {
+  const resp = await POST(`${apiBase}/user/actions/variables/${encodeURIComponent(name)}`, {data: {value, description: description ?? ''}});
+  if (!resp.ok) throw new Error(`Failed to create variable: ${resp.status}`);
+}
+
+export async function updateUserVariable(name: string, value: string, description?: string): Promise<void> {
+  const resp = await PUT(`${apiBase}/user/actions/variables/${encodeURIComponent(name)}`, {data: {value, description: description ?? ''}});
+  if (!resp.ok) throw new Error(`Failed to update variable: ${resp.status}`);
+}
+
+export async function deleteUserVariable(name: string): Promise<void> {
+  const resp = await DELETE(`${apiBase}/user/actions/variables/${encodeURIComponent(name)}`);
+  if (!resp.ok) throw new Error(`Failed to delete variable: ${resp.status}`);
+}
+
+// ---- Actions Runners (user-level) ----
+
+export type ActionRunner = {
+  id: number;
+  name: string;
+  status: string;
+  busy: boolean;
+  disabled: boolean;
+  labels: Array<{id: number; name: string; type: string}>;
+};
+
+export type ActionRunnerToken = {token: string; token_is_expired: boolean};
+
+export async function listUserRunners(): Promise<ActionRunner[]> {
+  const resp = await GET(`${apiBase}/user/actions/runners`);
+  if (!resp.ok) throw new Error(`Failed to list runners: ${resp.status}`);
+  const data = await resp.json() as {runners: ActionRunner[]};
+  return data.runners ?? [];
+}
+
+export async function getUserRunnerRegistrationToken(): Promise<string> {
+  const resp = await POST(`${apiBase}/user/actions/runners/registration-token`, {});
+  if (!resp.ok) throw new Error(`Failed to get registration token: ${resp.status}`);
+  const data = await resp.json() as ActionRunnerToken;
+  return data.token;
+}
+
+export async function deleteUserRunner(id: number): Promise<void> {
+  const resp = await DELETE(`${apiBase}/user/actions/runners/${id}`);
+  if (!resp.ok) throw new Error(`Failed to delete runner: ${resp.status}`);
+}
+
 // ---- OAuth2 Applications ----
 
 export type OAuth2Application = {

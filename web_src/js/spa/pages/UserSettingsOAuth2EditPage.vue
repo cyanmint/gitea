@@ -48,7 +48,6 @@
                   </div>
                 </div>
               </div>
-              </div>
 
               <!-- Edit fields -->
               <div class="ui bottom attached segment">

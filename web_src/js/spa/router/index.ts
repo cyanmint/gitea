@@ -91,9 +91,9 @@ const routes: RouteRecordRaw[] = [
 
   // ── User settings ─────────────────────────────────────────────────────────
   {path: '/user/settings', component: UserSettingsPage, meta: {title: 'Settings'}},
+  {path: '/user/settings/applications/oauth2/:id', component: UserSettingsOAuth2EditPage, meta: {title: 'Edit OAuth2 Application'}},
   {path: '/user/settings/:tab', component: UserSettingsPage, meta: {title: 'Settings'}},
   {path: '/user/settings/:tab/:subsection', component: UserSettingsPage, meta: {title: 'Settings'}},
-  {path: '/user/settings/applications/oauth2/:id', component: UserSettingsOAuth2EditPage, meta: {title: 'Edit OAuth2 Application'}},
 
   // ── User dashboard (issues / pulls / milestones) ──────────────────────────
   {path: '/issues', component: UserIssuesPage, meta: {title: 'Issues'}},

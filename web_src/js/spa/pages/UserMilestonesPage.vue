@@ -285,6 +285,7 @@ function onDocClick(e: MouseEvent) {
 }
 
 function updateRepoMilestoneCounts() {
+  const counts: Record<number, number> = {};
   for (const m of allMilestones.value) {
     if (m.milestone.state === state.value) {
       counts[m.repoId] = (counts[m.repoId] ?? 0) + 1;

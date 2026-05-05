@@ -1,36 +1,15 @@
 <template>
   <AppLayout page-class="repository view issue pull">
-    <!-- Secondary nav (repo header + tabs) -->
-    <div class="secondary-nav">
-      <div class="ui container">
-        <div class="repo-header flex-left-right">
-          <div class="flex-text-block">
-            <div class="flex-text-block tw-flex-wrap tw-text-18">
-              <RouterLink class="muted tw-font-normal" :to="`/${owner}`">{{ owner }}</RouterLink>/<RouterLink class="muted" :to="`/${owner}/${repoName}`">{{ repoName }}</RouterLink>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="ui container">
-        <overflow-menu class="ui secondary pointing menu">
-          <div class="overflow-menu-items">
-            <RouterLink :to="`/${owner}/${repoName}`" class="item">
-              <SvgIcon name="octicon-code" :size="16"/> Code
-            </RouterLink>
-            <RouterLink :to="`/${owner}/${repoName}/issues`" class="item active">
-              <SvgIcon name="octicon-issue-opened" :size="16"/> Issues
-            </RouterLink>
-            <RouterLink :to="`/${owner}/${repoName}/pulls`" class="item">
-              <SvgIcon name="octicon-git-pull-request" :size="16"/> Pull Requests
-            </RouterLink>
-            <RouterLink :to="`/${owner}/${repoName}/releases`" class="item">
-              <SvgIcon name="octicon-tag" :size="16"/> Releases
-            </RouterLink>
-          </div>
-        </overflow-menu>
-      </div>
-      <div class="ui tabs divider"/>
-    </div>
+    <RepoNav
+      :owner="owner"
+      :repo-name="repoName"
+      active-tab="issues"
+      :repo="repo"
+      :current-user="currentUser"
+      :starred="starred"
+      :star-loading="starLoading"
+      @toggle-star="toggleStar"
+    />
 
     <div class="ui container">
       <!-- Loading / error -->
@@ -212,8 +191,13 @@
 import {ref, onMounted} from 'vue';
 import {RouterLink, useRoute} from 'vue-router';
 import AppLayout from '../layouts/AppLayout.vue';
+import RepoNav from '../components/RepoNav.vue';
 import {SvgIcon} from '../../svg.ts';
-import {getIssue, getIssueComments, getCurrentUser, createIssueComment, type Issue, type Comment, type User} from '../api/index.ts';
+import {
+  getIssue, getIssueComments, getCurrentUser, createIssueComment,
+  getRepo, isRepoStarred, starRepo, unstarRepo,
+  type Issue, type Comment, type User, type Repository,
+} from '../api/index.ts';
 
 const route = useRoute();
 const owner = String(route.params.owner);
@@ -227,6 +211,9 @@ const issue = ref<Issue | null>(null);
 const comments = ref<Comment[]>([]);
 const commentsLoading = ref(false);
 const currentUser = ref<User | null>(null);
+const repo = ref<Repository | null>(null);
+const starred = ref(false);
+const starLoading = ref(false);
 
 const newComment = ref('');
 const submittingComment = ref(false);
@@ -242,6 +229,24 @@ function timeAgo(dateStr: string): string {
   if (months < 12) return `${months} month${months === 1 ? '' : 's'} ago`;
   const years = Math.floor(months / 12);
   return `${years} year${years === 1 ? '' : 's'} ago`;
+}
+
+async function toggleStar() {
+  if (!currentUser.value || starLoading.value) return;
+  starLoading.value = true;
+  try {
+    if (starred.value) {
+      await unstarRepo(owner, repoName);
+      starred.value = false;
+      if (repo.value) repo.value.stars_count = (repo.value.stars_count ?? 1) - 1;
+    } else {
+      await starRepo(owner, repoName);
+      starred.value = true;
+      if (repo.value) repo.value.stars_count = (repo.value.stars_count ?? 0) + 1;
+    }
+  } finally {
+    starLoading.value = false;
+  }
 }
 
 async function submitComment() {
@@ -261,7 +266,14 @@ async function submitComment() {
 }
 
 onMounted(async () => {
-  currentUser.value = await getCurrentUser();
+  const user = await getCurrentUser();
+  currentUser.value = user;
+
+  const [repoData] = await Promise.all([
+    getRepo(owner, repoName).catch(() => null),
+    user ? isRepoStarred(owner, repoName).then((s) => { starred.value = s; }).catch(() => {}) : Promise.resolve(),
+  ]);
+  repo.value = repoData;
 
   try {
     issue.value = await getIssue(owner, repoName, issueIndex);

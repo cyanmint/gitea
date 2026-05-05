@@ -230,7 +230,7 @@ import {ref, computed, onMounted, watch} from 'vue';
 import {useRoute, useRouter} from 'vue-router';
 import AppLayout from '../layouts/AppLayout.vue';
 import RepoNav from '../components/RepoNav.vue';
-import {GET, POST, PATCH, PUT, DELETE} from '../../../modules/fetch.ts';
+import {GET, POST, PATCH, PUT, DELETE} from '../../modules/fetch.ts';
 import {getRepo, getCurrentUser, type Repository, type User} from '../api/index.ts';
 import {apiBase, appSubUrl} from '../spaconfig.ts';
 

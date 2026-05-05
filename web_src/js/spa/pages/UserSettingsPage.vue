@@ -673,14 +673,171 @@
                   </div>
                 </div>
               </template>
-              <!-- Secrets/Variables/Runners sub-sections link out -->
-              <template v-else>
-                <h4 class="ui top attached header">Actions — {{ activeSub }}</h4>
+              <!-- Secrets sub-section -->
+              <template v-else-if="activeSub === 'secrets'">
+                <h4 class="ui top attached header">Actions Secrets</h4>
+                <div v-if="secretsError" class="ui negative message tw-mb-2"><p>{{ secretsError }}</p></div>
                 <div class="ui attached segment">
-                  <p>Manage Actions {{ activeSub }} through the full Gitea interface.</p>
-                  <a v-if="currentUser" :href="`${appSubUrl}/${currentUser.login}/settings/actions/${activeSub}`" class="ui primary button" target="_blank" rel="noopener">
-                    Open in Gitea
-                  </a>
+                  <div v-if="secretsLoading" class="ui active centered inline loader"/>
+                  <div v-else-if="userSecrets.length === 0" class="item">No secrets configured.</div>
+                  <div v-else class="flex-divided-list items-with-main">
+                    <div v-for="s in userSecrets" :key="s.name" class="item">
+                      <div class="item-leading"><SvgIcon name="octicon-key" :size="28"/></div>
+                      <div class="item-main">
+                        <div class="item-title">{{ s.name }}</div>
+                        <div class="item-body tw-text-text-light">{{ s.description }}</div>
+                      </div>
+                      <div class="item-trailing">
+                        <button class="ui red tiny button" @click="submitDeleteSecret(s.name)">Delete</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="ui bottom attached segment">
+                  <details>
+                    <summary><h4 class="ui header tw-inline-block tw-my-2">Add Secret</h4></summary>
+                    <div class="ui form tw-mt-3">
+                      <div class="two fields">
+                        <div class="field">
+                          <label>Name</label>
+                          <input v-model="newSecretName" type="text" placeholder="SECRET_NAME" maxlength="100">
+                        </div>
+                        <div class="field">
+                          <label>Description (optional)</label>
+                          <input v-model="newSecretDesc" type="text" placeholder="Optional description">
+                        </div>
+                      </div>
+                      <div class="field">
+                        <label>Value</label>
+                        <textarea v-model="newSecretValue" rows="3" placeholder="Secret value (will not be shown again)"/>
+                      </div>
+                      <button
+                        class="ui primary button"
+                        :class="{loading: secretSaving}"
+                        :disabled="secretSaving || !newSecretName.trim() || !newSecretValue.trim()"
+                        @click="submitCreateSecret"
+                      >
+                        Add Secret
+                      </button>
+                    </div>
+                  </details>
+                </div>
+              </template>
+
+              <!-- Variables sub-section -->
+              <template v-else-if="activeSub === 'variables'">
+                <h4 class="ui top attached header">Actions Variables</h4>
+                <div v-if="variablesError" class="ui negative message tw-mb-2"><p>{{ variablesError }}</p></div>
+                <div class="ui attached segment">
+                  <div v-if="variablesLoading" class="ui active centered inline loader"/>
+                  <div v-else-if="userVariables.length === 0" class="item">No variables configured.</div>
+                  <div v-else class="flex-divided-list items-with-main">
+                    <div v-for="v in userVariables" :key="v.name" class="item">
+                      <div class="item-leading"><SvgIcon name="octicon-package" :size="28"/></div>
+                      <div class="item-main">
+                        <div v-if="editingVar?.name === v.name">
+                          <div class="ui form tw-mb-2">
+                            <div class="field">
+                              <label>Value</label>
+                              <input v-model="editVarValue" type="text">
+                            </div>
+                            <div class="field">
+                              <label>Description</label>
+                              <input v-model="editVarDesc" type="text">
+                            </div>
+                          </div>
+                          <div class="tw-flex tw-gap-2">
+                            <button class="ui primary tiny button" :class="{loading: editVarSaving}" @click="submitUpdateVariable">Save</button>
+                            <button class="ui tiny button" @click="editingVar = null">Cancel</button>
+                          </div>
+                        </div>
+                        <template v-else>
+                          <div class="item-title">{{ v.name }}</div>
+                          <div class="item-body tw-text-text-light">{{ v.data }}</div>
+                        </template>
+                      </div>
+                      <div v-if="editingVar?.name !== v.name" class="item-trailing tw-flex tw-gap-2">
+                        <button class="ui tiny button" @click="startEditVar(v)">Edit</button>
+                        <button class="ui red tiny button" @click="submitDeleteVariable(v.name)">Delete</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="ui bottom attached segment">
+                  <details>
+                    <summary><h4 class="ui header tw-inline-block tw-my-2">Add Variable</h4></summary>
+                    <div class="ui form tw-mt-3">
+                      <div class="two fields">
+                        <div class="field">
+                          <label>Name</label>
+                          <input v-model="newVarName" type="text" placeholder="VARIABLE_NAME" maxlength="100">
+                        </div>
+                        <div class="field">
+                          <label>Description (optional)</label>
+                          <input v-model="newVarDesc" type="text" placeholder="Optional description">
+                        </div>
+                      </div>
+                      <div class="field">
+                        <label>Value</label>
+                        <input v-model="newVarValue" type="text" placeholder="Variable value">
+                      </div>
+                      <button
+                        class="ui primary button"
+                        :class="{loading: varSaving}"
+                        :disabled="varSaving || !newVarName.trim() || !newVarValue.trim()"
+                        @click="submitCreateVariable"
+                      >
+                        Add Variable
+                      </button>
+                    </div>
+                  </details>
+                </div>
+              </template>
+
+              <!-- Runners sub-section -->
+              <template v-else-if="activeSub === 'runners'">
+                <h4 class="ui top attached header">
+                  Actions Runners
+                  <div class="ui right">
+                    <button
+                      class="ui primary tiny button"
+                      :class="{loading: runnerTokenLoading}"
+                      @click="fetchRunnerRegToken"
+                    >
+                      Get Registration Token
+                    </button>
+                  </div>
+                </h4>
+                <div v-if="runnersError" class="ui negative message tw-mb-2"><p>{{ runnersError }}</p></div>
+                <div v-if="runnerRegToken" class="ui info message tw-mb-2">
+                  <p><strong>Registration token (copy now):</strong></p>
+                  <code class="tw-select-all tw-break-all">{{ runnerRegToken }}</code>
+                </div>
+                <div class="ui attached segment">
+                  <div v-if="runnersLoading" class="ui active centered inline loader"/>
+                  <div v-else-if="userRunners.length === 0" class="item">No runners registered.</div>
+                  <div v-else class="flex-divided-list items-with-main">
+                    <div v-for="r in userRunners" :key="r.id" class="item">
+                      <div class="item-leading"><SvgIcon name="octicon-cpu" :size="28"/></div>
+                      <div class="item-main">
+                        <div class="item-title">{{ r.name }}</div>
+                        <div class="item-body">
+                          <span
+                            class="ui label"
+                            :class="r.status === 'online' ? 'green' : r.status === 'offline' ? 'grey' : 'yellow'"
+                          >
+                            {{ r.status }}
+                          </span>
+                          <span v-if="r.busy" class="ui label yellow tw-ml-1">busy</span>
+                          <span v-if="r.disabled" class="ui label red tw-ml-1">disabled</span>
+                          <span v-for="lbl in r.labels" :key="lbl.id" class="ui tiny label tw-ml-1">{{ lbl.name }}</span>
+                        </div>
+                      </div>
+                      <div class="item-trailing">
+                        <button class="ui red tiny button" @click="submitDeleteRunner(r.id)">Delete</button>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </template>
             </div>
@@ -712,9 +869,13 @@ import {
   getMyRepos,
   listOAuth2Applications, createOAuth2Application, deleteOAuth2Application,
   listOAuth2Grants, revokeOAuth2Grant,
+  listUserSecrets, setUserSecret, deleteUserSecret,
+  listUserVariables, createUserVariable, updateUserVariable, deleteUserVariable,
+  listUserRunners, getUserRunnerRegistrationToken, deleteUserRunner,
   type User, type EmailAddress, type SSHKey, type GPGKey, type AccessToken,
   type BlockedUser, type Webhook, type UserActionsPermissions, type Organization, type Repository,
   type OAuth2Application, type OAuth2Grant,
+  type ActionSecret, type ActionVariable, type ActionRunner,
 } from '../api/index.ts';
 
 const route = useRoute();
@@ -1285,6 +1446,171 @@ const actionsPermsSaving = ref(false);
 const actionsPermsError = ref('');
 const actionsPermsSuccess = ref(false);
 
+// ---- Actions secrets ----
+
+const userSecrets = ref<ActionSecret[]>([]);
+const secretsLoading = ref(false);
+const secretsError = ref('');
+const newSecretName = ref('');
+const newSecretValue = ref('');
+const newSecretDesc = ref('');
+const secretSaving = ref(false);
+
+async function loadUserSecrets() {
+  secretsLoading.value = true;
+  secretsError.value = '';
+  try {
+    userSecrets.value = await listUserSecrets();
+  } catch (e) {
+    secretsError.value = String(e);
+  } finally {
+    secretsLoading.value = false;
+  }
+}
+
+async function submitCreateSecret() {
+  if (!newSecretName.value.trim() || !newSecretValue.value.trim()) return;
+  secretsError.value = '';
+  secretSaving.value = true;
+  try {
+    await setUserSecret(newSecretName.value.trim(), newSecretValue.value.trim(), newSecretDesc.value.trim());
+    newSecretName.value = '';
+    newSecretValue.value = '';
+    newSecretDesc.value = '';
+    await loadUserSecrets();
+  } catch (e) {
+    secretsError.value = String(e);
+  } finally {
+    secretSaving.value = false;
+  }
+}
+
+async function submitDeleteSecret(name: string) {
+  secretsError.value = '';
+  try {
+    await deleteUserSecret(name);
+    await loadUserSecrets();
+  } catch (e) {
+    secretsError.value = String(e);
+  }
+}
+
+// ---- Actions variables ----
+
+const userVariables = ref<ActionVariable[]>([]);
+const variablesLoading = ref(false);
+const variablesError = ref('');
+const newVarName = ref('');
+const newVarValue = ref('');
+const newVarDesc = ref('');
+const varSaving = ref(false);
+const editingVar = ref<ActionVariable | null>(null);
+const editVarValue = ref('');
+const editVarDesc = ref('');
+const editVarSaving = ref(false);
+
+async function loadUserVariables() {
+  variablesLoading.value = true;
+  variablesError.value = '';
+  try {
+    userVariables.value = await listUserVariables();
+  } catch (e) {
+    variablesError.value = String(e);
+  } finally {
+    variablesLoading.value = false;
+  }
+}
+
+async function submitCreateVariable() {
+  if (!newVarName.value.trim() || !newVarValue.value.trim()) return;
+  variablesError.value = '';
+  varSaving.value = true;
+  try {
+    await createUserVariable(newVarName.value.trim(), newVarValue.value.trim(), newVarDesc.value.trim());
+    newVarName.value = '';
+    newVarValue.value = '';
+    newVarDesc.value = '';
+    await loadUserVariables();
+  } catch (e) {
+    variablesError.value = String(e);
+  } finally {
+    varSaving.value = false;
+  }
+}
+
+async function startEditVar(v: ActionVariable) {
+  editingVar.value = v;
+  editVarValue.value = v.data;
+  editVarDesc.value = v.description;
+}
+
+async function submitUpdateVariable() {
+  if (!editingVar.value) return;
+  editVarSaving.value = true;
+  variablesError.value = '';
+  try {
+    await updateUserVariable(editingVar.value.name, editVarValue.value.trim(), editVarDesc.value.trim());
+    editingVar.value = null;
+    await loadUserVariables();
+  } catch (e) {
+    variablesError.value = String(e);
+  } finally {
+    editVarSaving.value = false;
+  }
+}
+
+async function submitDeleteVariable(name: string) {
+  variablesError.value = '';
+  try {
+    await deleteUserVariable(name);
+    await loadUserVariables();
+  } catch (e) {
+    variablesError.value = String(e);
+  }
+}
+
+// ---- Actions runners ----
+
+const userRunners = ref<ActionRunner[]>([]);
+const runnersLoading = ref(false);
+const runnersError = ref('');
+const runnerRegToken = ref('');
+const runnerTokenLoading = ref(false);
+
+async function loadUserRunners() {
+  runnersLoading.value = true;
+  runnersError.value = '';
+  try {
+    userRunners.value = await listUserRunners();
+  } catch (e) {
+    runnersError.value = String(e);
+  } finally {
+    runnersLoading.value = false;
+  }
+}
+
+async function fetchRunnerRegToken() {
+  runnerTokenLoading.value = true;
+  runnersError.value = '';
+  try {
+    runnerRegToken.value = await getUserRunnerRegistrationToken();
+  } catch (e) {
+    runnersError.value = String(e);
+  } finally {
+    runnerTokenLoading.value = false;
+  }
+}
+
+async function submitDeleteRunner(id: number) {
+  runnersError.value = '';
+  try {
+    await deleteUserRunner(id);
+    await loadUserRunners();
+  } catch (e) {
+    runnersError.value = String(e);
+  }
+}
+
 async function loadActionsPerms() {
   actionsPermsLoading.value = true;
   actionsPermsError.value = '';
@@ -1329,7 +1655,15 @@ async function loadTabData(tab: string) {
     case 'organization': await loadOrgs(); break;
     case 'repos': await loadMyRepos(); break;
     case 'hooks': await loadUserHooks(); break;
-    case 'actions': await loadActionsPerms(); break;
+    case 'actions': {
+      const sub = activeSub.value || 'general';
+      const loads: Promise<void>[] = [loadActionsPerms()];
+      if (sub === 'secrets') loads.push(loadUserSecrets());
+      else if (sub === 'variables') loads.push(loadUserVariables());
+      else if (sub === 'runners') loads.push(loadUserRunners());
+      await Promise.all(loads);
+      break;
+    }
   }
 }
 
