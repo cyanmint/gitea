@@ -94,3 +94,29 @@
 @import "./helpers.css";
 
 @tailwind utilities;
+
+/* ── SPA-specific overrides ──────────────────────────────────────────────── */
+
+/* The Vue app mounts into #app which is a direct child of <body>.
+ * <body> uses display:flex + flex-direction:column but that only works when
+ * nav / page-content / footer are direct children of body.  In SPA mode they
+ * are inside #app, so #app must carry the same flex layout and fill the full
+ * viewport height so the footer is pinned to the bottom. */
+#app {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+/* Allow the page content area to grow and fill all remaining space between
+ * the navbar and the footer. */
+#app > .page-content {
+  flex: 1;
+}
+
+/* Fomantic UI's JS normally adds an inline display:block when a dropdown is
+ * activated.  In the SPA we drive state through Vue reactive data instead of
+ * Fomantic JS, so we need a CSS rule to replicate that behaviour. */
+.ui.dropdown.active > .menu {
+  display: block !important;
+}
