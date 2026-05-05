@@ -62,3 +62,10 @@ type swaggerResponseUserActionsPermissions struct {
 	// in:body
 	Body api.UserActionsPermissions `json:"body"`
 }
+
+// OAuth2GrantList
+// swagger:response OAuth2GrantList
+type swaggerResponseOAuth2GrantList struct {
+	// in:body
+	Body []api.OAuth2Grant `json:"body"`
+}

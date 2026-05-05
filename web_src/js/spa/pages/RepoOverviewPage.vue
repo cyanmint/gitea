@@ -25,9 +25,6 @@
       />
 
       <!-- ── Main content ─────────────────────────────────────────────── -->
-                <RouterLink :to="`/${owner}/${repoName}/forks`" class="ui compact small basic button">
-                  {{ repo.forks_count }}
-      <!-- ── Main content ─────────────────────────────────────────────── -->
       <div class="ui container">
         <div class="repo-grid-filelist-sidebar">
           <!-- file list + README area -->

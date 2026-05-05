@@ -87,6 +87,8 @@ export type Issue = {
   updated_at: string;
   comments: number;
   labels: Label[];
+  milestone?: {id: number; title: string} | null;
+  assignees?: User[];
 };
 
 export type Label = {
@@ -889,4 +891,75 @@ export async function setUserActionsPermissions(perms: UserActionsPermissions): 
 export async function leaveOrganization(orgName: string, username: string): Promise<void> {
   const resp = await DELETE(`${apiBase}/orgs/${encodeURIComponent(orgName)}/members/${encodeURIComponent(username)}`);
   if (!resp.ok) throw new Error(`Failed to leave organization: ${resp.status}`);
+}
+
+// ---- OAuth2 Applications ----
+
+export type OAuth2Application = {
+  id: number;
+  name: string;
+  client_id: string;
+  client_secret: string;
+  confidential_client: boolean;
+  skip_secondary_authorization: boolean;
+  redirect_uris: string[];
+  created: string;
+};
+
+export async function listOAuth2Applications(): Promise<OAuth2Application[]> {
+  const resp = await GET(`${apiBase}/user/applications/oauth2?limit=50`);
+  if (!resp.ok) throw new Error(`Failed to list OAuth2 applications: ${resp.status}`);
+  return resp.json() as Promise<OAuth2Application[]>;
+}
+
+export async function getOAuth2Application(id: number): Promise<OAuth2Application> {
+  const resp = await GET(`${apiBase}/user/applications/oauth2/${id}`);
+  if (!resp.ok) throw new Error(`Failed to get OAuth2 application: ${resp.status}`);
+  return resp.json() as Promise<OAuth2Application>;
+}
+
+export type CreateOAuth2ApplicationOptions = {
+  name: string;
+  redirect_uris: string[];
+  confidential_client?: boolean;
+  skip_secondary_authorization?: boolean;
+};
+
+export async function createOAuth2Application(opts: CreateOAuth2ApplicationOptions): Promise<OAuth2Application> {
+  const resp = await POST(`${apiBase}/user/applications/oauth2`, {data: opts});
+  if (!resp.ok) throw new Error(`Failed to create OAuth2 application: ${resp.status}`);
+  return resp.json() as Promise<OAuth2Application>;
+}
+
+export async function updateOAuth2Application(id: number, opts: CreateOAuth2ApplicationOptions): Promise<OAuth2Application> {
+  const resp = await PATCH(`${apiBase}/user/applications/oauth2/${id}`, {data: opts});
+  if (!resp.ok) throw new Error(`Failed to update OAuth2 application: ${resp.status}`);
+  return resp.json() as Promise<OAuth2Application>;
+}
+
+export async function deleteOAuth2Application(id: number): Promise<void> {
+  const resp = await DELETE(`${apiBase}/user/applications/oauth2/${id}`);
+  if (!resp.ok) throw new Error(`Failed to delete OAuth2 application: ${resp.status}`);
+}
+
+// ---- OAuth2 Grants ----
+
+export type OAuth2Grant = {
+  id: number;
+  user_id: number;
+  application_id: number;
+  application_name: string;
+  scope: string;
+  created: string;
+};
+
+export async function listOAuth2Grants(): Promise<OAuth2Grant[]> {
+  const resp = await GET(`${apiBase}/user/applications/grants`);
+  if (!resp.ok) throw new Error(`Failed to list OAuth2 grants: ${resp.status}`);
+  return resp.json() as Promise<OAuth2Grant[]>;
+}
+
+export async function revokeOAuth2Grant(id: number): Promise<void> {
+  const resp = await DELETE(`${apiBase}/user/applications/grants/${id}`);
+  if (!resp.ok) throw new Error(`Failed to revoke OAuth2 grant: ${resp.status}`);
 }

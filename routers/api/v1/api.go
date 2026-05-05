@@ -1084,6 +1084,8 @@ func Routes() *web.Router {
 					Delete(user.DeleteOauth2Application).
 					Patch(bind(api.CreateOAuth2ApplicationOptions{}), user.UpdateOauth2Application).
 					Get(user.GetOauth2Application)
+				m.Get("/grants", user.ListOAuth2Grants)
+				m.Delete("/grants/{id}", user.RevokeOAuth2Grant)
 			})
 
 			// (admin:gpg_key scope)

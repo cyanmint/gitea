@@ -19628,6 +19628,59 @@
         }
       }
     },
+    "/user/applications/grants": {
+      "get": {
+        "produces": [
+          "application/json"
+        ],
+        "tags": [
+          "user"
+        ],
+        "summary": "List all OAuth2 grants for the authenticated user",
+        "operationId": "userListOAuth2Grants",
+        "responses": {
+          "200": {
+            "$ref": "#/responses/OAuth2GrantList"
+          },
+          "401": {
+            "$ref": "#/responses/unauthorized"
+          }
+        }
+      }
+    },
+    "/user/applications/grants/{id}": {
+      "delete": {
+        "produces": [
+          "application/json"
+        ],
+        "tags": [
+          "user"
+        ],
+        "summary": "Revoke an OAuth2 grant for the authenticated user",
+        "operationId": "userRevokeOAuth2Grant",
+        "parameters": [
+          {
+            "type": "integer",
+            "format": "int64",
+            "description": "Grant ID",
+            "name": "id",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "responses": {
+          "204": {
+            "$ref": "#/responses/empty"
+          },
+          "401": {
+            "$ref": "#/responses/unauthorized"
+          },
+          "404": {
+            "$ref": "#/responses/notFound"
+          }
+        }
+      }
+    },
     "/user/avatar": {
       "post": {
         "produces": [
@@ -27795,6 +27848,47 @@
       },
       "x-go-package": "code.gitea.io/gitea/modules/structs"
     },
+    "OAuth2Grant": {
+      "type": "object",
+      "title": "OAuth2Grant represents an authorized OAuth2 grant.",
+      "properties": {
+        "application_id": {
+          "description": "The application ID this grant belongs to",
+          "type": "integer",
+          "format": "int64",
+          "x-go-name": "ApplicationID"
+        },
+        "application_name": {
+          "description": "The name of the application",
+          "type": "string",
+          "x-go-name": "ApplicationName"
+        },
+        "created": {
+          "description": "The time the grant was created",
+          "type": "string",
+          "format": "date-time",
+          "x-go-name": "Created"
+        },
+        "id": {
+          "description": "The unique identifier of the grant",
+          "type": "integer",
+          "format": "int64",
+          "x-go-name": "ID"
+        },
+        "scope": {
+          "description": "The granted scope",
+          "type": "string",
+          "x-go-name": "Scope"
+        },
+        "user_id": {
+          "description": "The user ID that authorized the grant",
+          "type": "integer",
+          "format": "int64",
+          "x-go-name": "UserID"
+        }
+      },
+      "x-go-package": "code.gitea.io/gitea/modules/structs"
+    },
     "Organization": {
       "description": "Organization represents an organization",
       "type": "object",
@@ -31013,6 +31107,15 @@
         "type": "array",
         "items": {
           "$ref": "#/definitions/OAuth2Application"
+        }
+      }
+    },
+    "OAuth2GrantList": {
+      "description": "OAuth2GrantList is a list of OAuth2 grants.",
+      "schema": {
+        "type": "array",
+        "items": {
+          "$ref": "#/definitions/OAuth2Grant"
         }
       }
     },

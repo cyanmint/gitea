@@ -76,3 +76,24 @@ type OAuth2Application struct {
 // OAuth2ApplicationList represents a list of OAuth2 applications.
 // swagger:response OAuth2ApplicationList
 type OAuth2ApplicationList []*OAuth2Application
+
+// OAuth2Grant represents an authorized OAuth2 grant.
+// swagger:model OAuth2Grant
+type OAuth2Grant struct {
+	// The unique identifier of the grant
+	ID int64 `json:"id"`
+	// The user ID that authorized the grant
+	UserID int64 `json:"user_id"`
+	// The application ID this grant belongs to
+	ApplicationID int64 `json:"application_id"`
+	// The name of the application
+	ApplicationName string `json:"application_name"`
+	// The granted scope
+	Scope string `json:"scope"`
+	// The time the grant was created
+	Created time.Time `json:"created"`
+}
+
+// OAuth2GrantList is a list of OAuth2 grants.
+// swagger:response OAuth2GrantList
+type OAuth2GrantList []*OAuth2Grant

@@ -294,9 +294,105 @@
                 </details>
               </div>
             </div>
-          </template>
 
-          <!-- SSH / GPG Keys tab -->
+              <!-- OAuth2 Authorized Applications (Grants) -->
+              <h4 class="ui top attached header tw-mt-6">Authorized OAuth2 Applications</h4>
+              <div v-if="oauth2GrantsError" class="ui negative message tw-mb-2"><p>{{ oauth2GrantsError }}</p></div>
+              <div class="ui attached segment">
+                <div v-if="oauth2GrantsLoading" class="ui active centered inline loader"/>
+                <div v-else-if="oauth2Grants.length === 0" class="item">
+                  No authorized applications.
+                </div>
+                <div v-else class="flex-divided-list items-with-main">
+                  <div v-for="grant in oauth2Grants" :key="grant.id" class="item">
+                    <div class="item-leading">
+                      <SvgIcon name="octicon-key" :size="32"/>
+                    </div>
+                    <div class="item-main">
+                      <div class="item-title">{{ grant.application_name }}</div>
+                      <div class="item-body">
+                        <i>Authorized {{ formatDate(grant.created) }}</i>
+                        <span v-if="grant.scope" class="tw-ml-2 tw-text-sm tw-text-text-light">· {{ grant.scope }}</span>
+                      </div>
+                    </div>
+                    <div class="item-trailing">
+                      <button class="ui red tiny button" @click="submitRevokeGrant(grant)">Revoke</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- OAuth2 Own Applications -->
+              <h4 class="ui top attached header tw-mt-6">Manage OAuth2 Applications</h4>
+              <div v-if="oauth2AppsError" class="ui negative message tw-mb-2"><p>{{ oauth2AppsError }}</p></div>
+              <div class="ui attached segment">
+                <div v-if="createdOAuth2Secret" class="ui success message tw-mb-4">
+                  <p><strong>Application created! Copy the client secret now — it will not be shown again.</strong></p>
+                  <p>Client ID: <code class="tw-select-all">{{ createdOAuth2ClientId }}</code></p>
+                  <p>Client Secret: <code class="tw-break-all tw-select-all">{{ createdOAuth2Secret }}</code></p>
+                </div>
+                <div v-if="oauth2AppsLoading" class="ui active centered inline loader"/>
+                <div v-else-if="oauth2Apps.length === 0" class="item">
+                  No OAuth2 applications. Create one below.
+                </div>
+                <div v-else class="flex-divided-list items-with-main">
+                  <div v-for="app in oauth2Apps" :key="app.id" class="item tw-items-center">
+                    <div class="item-leading">
+                      <SvgIcon name="octicon-apps" :size="32"/>
+                    </div>
+                    <div class="item-main">
+                      <div class="item-title">{{ app.name }}</div>
+                      <div class="item-body">
+                        Client ID: <span class="ui label">{{ app.client_id }}</span>
+                      </div>
+                    </div>
+                    <div class="item-trailing tw-flex tw-gap-2">
+                      <RouterLink
+                        :to="`/user/settings/applications/oauth2/${app.id}`"
+                        class="ui primary tiny button"
+                      >
+                        <SvgIcon name="octicon-pencil" :size="14"/>
+                        Edit
+                      </RouterLink>
+                      <button class="ui red tiny button" @click="submitDeleteOAuth2App(app)">
+                        <SvgIcon name="octicon-trash" :size="14"/>
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="ui bottom attached segment">
+                <details>
+                  <summary><h4 class="ui header tw-inline-block tw-my-2">Create OAuth2 Application</h4></summary>
+                  <div class="ui form tw-mt-3">
+                    <div class="field">
+                      <label>Application Name</label>
+                      <input v-model="newOAuth2Name" type="text" placeholder="My Application" maxlength="255">
+                    </div>
+                    <div class="field">
+                      <label>Redirect URIs <span class="tw-text-text-light tw-font-normal">(one per line)</span></label>
+                      <textarea v-model="newOAuth2RedirectUris" rows="3" placeholder="https://example.com/callback"/>
+                    </div>
+                    <div class="field">
+                      <div class="ui checkbox">
+                        <input id="new-oauth2-confidential" v-model="newOAuth2Confidential" type="checkbox">
+                        <label for="new-oauth2-confidential">Confidential Client</label>
+                      </div>
+                    </div>
+                    <div v-if="oauth2CreateError" class="ui negative message"><p>{{ oauth2CreateError }}</p></div>
+                    <button
+                      class="ui primary button"
+                      :class="{loading: oauth2Creating}"
+                      :disabled="oauth2Creating || !newOAuth2Name.trim()"
+                      @click="submitCreateOAuth2App"
+                    >
+                      Create Application
+                    </button>
+                  </div>
+                </details>
+              </div>
+          </template>
           <template v-else-if="activeTab === 'keys'">
             <div class="user-setting-content">
               <!-- SSH Keys -->
@@ -614,8 +710,11 @@ import {
   getUserActionsPermissions, setUserActionsPermissions,
   getMyOrgs, leaveOrganization,
   getMyRepos,
+  listOAuth2Applications, createOAuth2Application, deleteOAuth2Application,
+  listOAuth2Grants, revokeOAuth2Grant,
   type User, type EmailAddress, type SSHKey, type GPGKey, type AccessToken,
   type BlockedUser, type Webhook, type UserActionsPermissions, type Organization, type Repository,
+  type OAuth2Application, type OAuth2Grant,
 } from '../api/index.ts';
 
 const route = useRoute();
@@ -870,8 +969,100 @@ async function submitDeleteToken(tok: AccessToken) {
   }
 }
 
-// ---- SSH Keys ----
+// ---- OAuth2 Applications ----
 
+const oauth2Apps = ref<OAuth2Application[]>([]);
+const oauth2AppsLoading = ref(false);
+const oauth2AppsError = ref('');
+const newOAuth2Name = ref('');
+const newOAuth2RedirectUris = ref('');
+const newOAuth2Confidential = ref(true);
+const createdOAuth2Secret = ref('');
+const createdOAuth2ClientId = ref('');
+const oauth2CreateError = ref('');
+const oauth2Creating = ref(false);
+
+async function loadOAuth2Apps() {
+  oauth2AppsLoading.value = true;
+  oauth2AppsError.value = '';
+  try {
+    oauth2Apps.value = await listOAuth2Applications();
+  } catch (e) {
+    oauth2AppsError.value = String(e);
+  } finally {
+    oauth2AppsLoading.value = false;
+  }
+}
+
+async function submitCreateOAuth2App() {
+  oauth2CreateError.value = '';
+  createdOAuth2Secret.value = '';
+  createdOAuth2ClientId.value = '';
+  if (!newOAuth2Name.value.trim()) return;
+  const uris = newOAuth2RedirectUris.value.split('\n').map((u) => u.trim()).filter(Boolean);
+  if (uris.length === 0) {
+    oauth2CreateError.value = 'At least one redirect URI is required.';
+    return;
+  }
+  oauth2Creating.value = true;
+  try {
+    const app = await createOAuth2Application({
+      name: newOAuth2Name.value.trim(),
+      redirect_uris: uris,
+      confidential_client: newOAuth2Confidential.value,
+    });
+    createdOAuth2Secret.value = app.client_secret || '';
+    createdOAuth2ClientId.value = app.client_id || '';
+    newOAuth2Name.value = '';
+    newOAuth2RedirectUris.value = '';
+    newOAuth2Confidential.value = true;
+    await loadOAuth2Apps();
+  } catch (e) {
+    oauth2CreateError.value = String(e);
+  } finally {
+    oauth2Creating.value = false;
+  }
+}
+
+async function submitDeleteOAuth2App(app: OAuth2Application) {
+  oauth2AppsError.value = '';
+  try {
+    await deleteOAuth2Application(app.id);
+    await loadOAuth2Apps();
+  } catch (e) {
+    oauth2AppsError.value = String(e);
+  }
+}
+
+// ---- OAuth2 Grants ----
+
+const oauth2Grants = ref<OAuth2Grant[]>([]);
+const oauth2GrantsLoading = ref(false);
+const oauth2GrantsError = ref('');
+
+async function loadOAuth2Grants() {
+  oauth2GrantsLoading.value = true;
+  oauth2GrantsError.value = '';
+  try {
+    oauth2Grants.value = await listOAuth2Grants();
+  } catch (e) {
+    oauth2GrantsError.value = String(e);
+  } finally {
+    oauth2GrantsLoading.value = false;
+  }
+}
+
+async function submitRevokeGrant(grant: OAuth2Grant) {
+  oauth2GrantsError.value = '';
+  try {
+    await revokeOAuth2Grant(grant.id);
+    await loadOAuth2Grants();
+  } catch (e) {
+    oauth2GrantsError.value = String(e);
+  }
+}
+
+// ---- SSH Keys ----
 const sshKeys = ref<SSHKey[]>([]);
 const sshLoading = ref(false);
 const newSSHTitle = ref('');
@@ -1128,7 +1319,9 @@ async function loadTabData(tab: string) {
     case 'profile': await loadProfile(); break;
     case 'account': await loadEmails(); break;
     case 'appearance': await loadAppearance(); break;
-    case 'applications': await loadTokens(); break;
+    case 'applications':
+      await Promise.all([loadTokens(), loadOAuth2Apps(), loadOAuth2Grants()]);
+      break;
     case 'keys':
       await Promise.all([loadSSHKeys(), loadGPGKeys()]);
       break;

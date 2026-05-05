@@ -38,6 +38,7 @@ import RepoTagsPage from '../pages/RepoTagsPage.vue';
 import RepoWikiPage from '../pages/RepoWikiPage.vue';
 import RepoActivityPage from '../pages/RepoActivityPage.vue';
 import NotFoundPage from '../pages/NotFoundPage.vue';
+import UserSettingsOAuth2EditPage from '../pages/UserSettingsOAuth2EditPage.vue';
 
 // ---------------------------------------------------------------------------
 // Auto-detect uninstalled state.
@@ -92,6 +93,7 @@ const routes: RouteRecordRaw[] = [
   {path: '/user/settings', component: UserSettingsPage, meta: {title: 'Settings'}},
   {path: '/user/settings/:tab', component: UserSettingsPage, meta: {title: 'Settings'}},
   {path: '/user/settings/:tab/:subsection', component: UserSettingsPage, meta: {title: 'Settings'}},
+  {path: '/user/settings/applications/oauth2/:id', component: UserSettingsOAuth2EditPage, meta: {title: 'Edit OAuth2 Application'}},
 
   // ── User dashboard (issues / pulls / milestones) ──────────────────────────
   {path: '/issues', component: UserIssuesPage, meta: {title: 'Issues'}},

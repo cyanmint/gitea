@@ -911,6 +911,19 @@
         },
         "description": "OAuth2ApplicationList represents a list of OAuth2 applications."
       },
+      "OAuth2GrantList": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "items": {
+                "$ref": "#/components/schemas/OAuth2Grant"
+              },
+              "type": "array"
+            }
+          }
+        },
+        "description": "OAuth2GrantList is a list of OAuth2 grants."
+      },
       "Organization": {
         "content": {
           "application/json": {
@@ -7900,6 +7913,47 @@
           }
         },
         "title": "OAuth2Application represents an OAuth2 application.",
+        "type": "object",
+        "x-go-package": "code.gitea.io/gitea/modules/structs"
+      },
+      "OAuth2Grant": {
+        "properties": {
+          "application_id": {
+            "description": "The application ID this grant belongs to",
+            "format": "int64",
+            "type": "integer",
+            "x-go-name": "ApplicationID"
+          },
+          "application_name": {
+            "description": "The name of the application",
+            "type": "string",
+            "x-go-name": "ApplicationName"
+          },
+          "created": {
+            "description": "The time the grant was created",
+            "format": "date-time",
+            "type": "string",
+            "x-go-name": "Created"
+          },
+          "id": {
+            "description": "The unique identifier of the grant",
+            "format": "int64",
+            "type": "integer",
+            "x-go-name": "ID"
+          },
+          "scope": {
+            "description": "The granted scope",
+            "type": "string",
+            "x-go-name": "Scope"
+          },
+          "user_id": {
+            "description": "The user ID that authorized the grant",
+            "format": "int64",
+            "type": "integer",
+            "x-go-name": "UserID"
+          }
+        },
+        "title": "OAuth2Grant represents an authorized OAuth2 grant.",
         "type": "object",
         "x-go-package": "code.gitea.io/gitea/modules/structs"
       },
@@ -31599,6 +31653,55 @@
           }
         },
         "summary": "update an OAuth2 Application, this includes regenerating the client secret",
+        "tags": [
+          "user"
+        ]
+      }
+    },
+    "/user/applications/grants": {
+      "get": {
+        "operationId": "userListOAuth2Grants",
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/OAuth2GrantList"
+          },
+          "401": {
+            "$ref": "#/components/responses/unauthorized"
+          }
+        },
+        "summary": "List all OAuth2 grants for the authenticated user",
+        "tags": [
+          "user"
+        ]
+      }
+    },
+    "/user/applications/grants/{id}": {
+      "delete": {
+        "operationId": "userRevokeOAuth2Grant",
+        "parameters": [
+          {
+            "description": "Grant ID",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "$ref": "#/components/responses/empty"
+          },
+          "401": {
+            "$ref": "#/components/responses/unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/notFound"
+          }
+        },
+        "summary": "Revoke an OAuth2 grant for the authenticated user",
         "tags": [
           "user"
         ]

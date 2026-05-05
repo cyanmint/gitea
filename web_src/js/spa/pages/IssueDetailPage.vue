@@ -71,78 +71,106 @@
 
         <!-- Content + sidebar layout -->
         <div class="issue-content">
-          <div class="comment-list">
-            <!-- Issue body comment -->
-            <div class="comment">
-              <div class="content">
-                <div class="ui attached header comment-header tw-flex tw-items-center tw-gap-2">
-                  <img :src="issue.user.avatar_url" :alt="issue.user.login" class="ui avatar image" width="24" height="24">
-                  <RouterLink :to="`/${issue.user.login}`" class="author">{{ issue.user.login }}</RouterLink>
-                  <span class="text muted">commented {{ timeAgo(issue.created_at) }}</span>
-                </div>
-                <div class="ui attached segment markup">
-                  <p>{{ issue.body || 'No description provided.' }}</p>
+          <!-- Main: timeline of comments — matches .issue-content-left -->
+          <div class="issue-content-left comment-list prevent-before-timeline">
+            <div class="ui timeline">
+              <!-- Issue body as first timeline comment -->
+              <div class="timeline-item comment first">
+                <a class="timeline-avatar" :href="`/${issue.user.login}`">
+                  <img :src="issue.user.avatar_url" :alt="issue.user.login" width="40" height="40">
+                </a>
+                <div class="content comment-container">
+                  <div class="comment-header avatar-content-left-arrow">
+                    <div class="comment-header-left">
+                      <a class="inline-timeline-avatar" :href="`/${issue.user.login}`">
+                        <img :src="issue.user.avatar_url" :alt="issue.user.login" width="24" height="24">
+                      </a>
+                      <span class="tw-text-text-light muted-links">
+                        <RouterLink :to="`/${issue.user.login}`">{{ issue.user.login }}</RouterLink>
+                        opened {{ timeAgo(issue.created_at) }}
+                      </span>
+                    </div>
+                  </div>
+                  <div class="ui attached segment comment-body">
+                    <div class="render-content markup">
+                      <p>{{ issue.body || 'No description provided.' }}</p>
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <!-- Comments -->
-            <div v-for="comment in comments" :key="comment.id" class="comment">
-              <div class="content">
-                <div class="ui attached header comment-header tw-flex tw-items-center tw-gap-2">
-                  <img :src="comment.user.avatar_url" :alt="comment.user.login" class="ui avatar image" width="24" height="24">
-                  <RouterLink :to="`/${comment.user.login}`" class="author">{{ comment.user.login }}</RouterLink>
-                  <span class="text muted">commented {{ timeAgo(comment.created_at) }}</span>
-                </div>
-                <div class="ui attached segment markup">
-                  <p>{{ comment.body || 'Empty comment.' }}</p>
+              <!-- Reply comments -->
+              <div
+                v-for="comment in comments"
+                :key="comment.id"
+                class="timeline-item comment"
+              >
+                <a class="timeline-avatar" :href="`/${comment.user.login}`">
+                  <img :src="comment.user.avatar_url" :alt="comment.user.login" width="40" height="40">
+                </a>
+                <div class="content comment-container">
+                  <div class="comment-header avatar-content-left-arrow">
+                    <div class="comment-header-left">
+                      <a class="inline-timeline-avatar" :href="`/${comment.user.login}`">
+                        <img :src="comment.user.avatar_url" :alt="comment.user.login" width="24" height="24">
+                      </a>
+                      <span class="tw-text-text-light muted-links">
+                        <RouterLink :to="`/${comment.user.login}`">{{ comment.user.login }}</RouterLink>
+                        commented {{ timeAgo(comment.created_at) }}
+                      </span>
+                    </div>
+                  </div>
+                  <div class="ui attached segment comment-body">
+                    <div class="render-content markup">
+                      <p>{{ comment.body || 'Empty comment.' }}</p>
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <div v-if="commentsLoading" class="tw-text-center tw-py-4">
-              <div class="ui active centered inline loader"/>
-            </div>
+              <div v-if="commentsLoading" class="timeline-item tw-text-center tw-py-4">
+                <div class="ui active centered inline loader"/>
+              </div>
 
-            <!-- Add comment form (signed-in only) -->
-            <div v-if="currentUser" class="comment">
-              <div class="content">
-                <div class="ui attached header comment-header tw-flex tw-items-center tw-gap-2">
-                  <img :src="currentUser.avatar_url" :alt="currentUser.login" class="ui avatar image" width="24" height="24">
-                  <span class="author">{{ currentUser.login }}</span>
-                </div>
-                <div class="ui attached segment">
+              <!-- Add comment form (signed-in only) -->
+              <div v-if="currentUser" class="timeline-item comment form">
+                <a class="timeline-avatar" :href="`/${currentUser.login}`">
+                  <img :src="currentUser.avatar_url" :alt="currentUser.login" width="40" height="40">
+                </a>
+                <div class="content">
                   <div v-if="commentError" class="ui negative message tw-mb-3">
                     <p>{{ commentError }}</p>
                   </div>
-                  <textarea
-                    v-model="newComment"
-                    class="ui fluid textarea"
-                    placeholder="Leave a comment…"
-                    rows="4"
-                  />
-                  <div class="tw-mt-3 tw-flex tw-justify-end">
-                    <button
-                      class="ui primary button"
-                      :class="{loading: submittingComment}"
-                      :disabled="submittingComment || !newComment.trim()"
-                      @click="submitComment"
-                    >
-                      Comment
-                    </button>
+                  <div class="ui segment">
+                    <textarea
+                      v-model="newComment"
+                      class="ui fluid textarea"
+                      placeholder="Leave a comment…"
+                      rows="4"
+                    />
+                    <div class="tw-mt-3 tw-flex tw-justify-end">
+                      <button
+                        class="ui primary button"
+                        :class="{loading: submittingComment}"
+                        :disabled="submittingComment || !newComment.trim()"
+                        @click="submitComment"
+                      >
+                        Comment
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
           </div>
 
-          <!-- Sidebar -->
-          <div class="issue-sidebar">
+          <!-- Sidebar — matches .issue-content-right -->
+          <div class="issue-content-right">
             <div class="sidebar-item-container">
               <div class="sidebar-item">
-                <div class="header">Labels</div>
+                <div class="header tw-font-semibold tw-mb-2">Labels</div>
                 <div v-if="issue.labels.length === 0" class="text muted">None yet</div>
-                <div v-else class="label-list">
+                <div v-else class="ui list labels-list">
                   <span
                     v-for="label in issue.labels"
                     :key="label.id"
@@ -152,6 +180,25 @@
                     {{ label.name }}
                   </span>
                 </div>
+              </div>
+              <div class="sidebar-item tw-mt-4">
+                <div class="header tw-font-semibold tw-mb-2">Milestone</div>
+                <div v-if="issue.milestone" class="text">
+                  <RouterLink :to="`/${owner}/${repoName}/milestone/${issue.milestone.id}`">
+                    {{ issue.milestone.title }}
+                  </RouterLink>
+                </div>
+                <div v-else class="text muted">None yet</div>
+              </div>
+              <div class="sidebar-item tw-mt-4">
+                <div class="header tw-font-semibold tw-mb-2">Assignees</div>
+                <div v-if="issue.assignees && issue.assignees.length" class="text">
+                  <div v-for="a in issue.assignees" :key="a.id" class="flex-text-block tw-gap-1 tw-mb-1">
+                    <img :src="a.avatar_url" :alt="a.login" class="ui avatar image" width="20" height="20">
+                    <RouterLink :to="`/${a.login}`">{{ a.login }}</RouterLink>
+                  </div>
+                </div>
+                <div v-else class="text muted">None yet</div>
               </div>
             </div>
           </div>
