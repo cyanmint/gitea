@@ -54,11 +54,11 @@
                 </div>
               </div>
               <div class="list-header-filters ui secondary menu tw-m-0">
-                <div class="item ui small dropdown jump">
+                <div class="item ui small dropdown jump" :class="{active: sortMenuOpen}" ref="sortDropdownEl" @click.stop="toggleSortMenu">
                   <span class="text tw-whitespace-nowrap">
                     Sort <SvgIcon name="octicon-triangle-down" :size="14" class="dropdown icon" />
                   </span>
-                  <div class="menu">
+                  <div class="menu" v-show="sortMenuOpen">
                     <a class="item" :class="{active: sortType === 'recentupdate'}" @click="setSort('recentupdate')">Recently updated</a>
                     <a class="item" :class="{active: sortType === 'latest'}" @click="setSort('latest')">Newest</a>
                     <a class="item" :class="{active: sortType === 'oldest'}" @click="setSort('oldest')">Oldest</a>

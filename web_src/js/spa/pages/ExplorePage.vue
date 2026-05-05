@@ -32,7 +32,7 @@
           </button>
         </div>
         <!-- Sort dropdown -->
-        <div class="item ui small dropdown jump" ref="sortDropdownEl" @click.stop="toggleSortMenu">
+        <div class="item ui small dropdown jump" :class="{active: sortMenuOpen}" ref="sortDropdownEl" @click.stop="toggleSortMenu">
           <span class="text">Sort: {{ sortLabel }}</span>
           <SvgIcon name="octicon-triangle-down" :size="14" class="dropdown icon" />
           <div class="menu" :class="{visible: sortMenuOpen}" v-show="sortMenuOpen">

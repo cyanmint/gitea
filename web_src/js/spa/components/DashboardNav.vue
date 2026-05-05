@@ -2,7 +2,7 @@
   <div class="secondary-nav tw-border-b tw-border-b-secondary">
     <div class="ui secondary stackable menu">
       <div class="item">
-        <div class="ui floating dropdown jump" @click.stop="toggleContextMenu">
+        <div class="ui floating dropdown jump" :class="{active: contextMenuOpen}" @click.stop="toggleContextMenu">
           <span class="text">
             <img
               v-if="currentUser"

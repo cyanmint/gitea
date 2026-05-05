@@ -120,3 +120,11 @@
 .ui.dropdown.active > .menu {
   display: block !important;
 }
+
+/* Navbar-right dropdowns must open leftward so they don't overflow the right
+ * edge of the viewport.  Fomantic's rule only handles .right.menu inside
+ * .ui.menu; the SPA navbar uses a plain #navbar .navbar-right div. */
+#navbar .navbar-right .ui.dropdown > .menu {
+  left: auto;
+  right: 0;
+}
