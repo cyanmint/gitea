@@ -237,7 +237,7 @@ async function load() {
     if (viewType.value === 'assigned') opts.assigned = true;
     items.value = await getUserIssues(opts);
     if (state.value === 'open') {
-      openCount.value = items.value.length >= pageSize ? items.value.length : items.value.length;
+      openCount.value = items.value.length;
     } else {
       closedCount.value = items.value.length;
     }
