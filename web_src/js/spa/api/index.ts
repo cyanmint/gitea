@@ -50,6 +50,8 @@ export type User = {
   html_url: string;
   is_admin: boolean;
   created: string;
+  website?: string;
+  location?: string;
 };
 
 export type Repository = {
