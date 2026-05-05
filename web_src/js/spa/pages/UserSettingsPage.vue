@@ -824,7 +824,7 @@ async function loadTabData(tab: string) {
   }
 }
 
-watch(activeTab, (tab) => { void loadTabData(tab); });
+watch(activeTab, (tab) => { loadTabData(tab); });
 
 onMounted(async () => {
   currentUser.value = await getCurrentUser();

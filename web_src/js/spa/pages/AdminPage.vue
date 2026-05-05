@@ -129,7 +129,7 @@
                 <div v-else-if="statsError" class="ui negative message"><p>{{ statsError }}</p></div>
                 <table v-else class="ui very basic table unstackable">
                   <tbody>
-                    <tr v-for="(val, key) in stats" :key="key">
+                    <tr v-for="(val, key) in systemStats" :key="key">
                       <td width="200">{{ key }}</td>
                       <td>{{ val }}</td>
                     </tr>
@@ -148,7 +148,7 @@
                 <div v-else-if="statsError" class="ui negative message"><p>{{ statsError }}</p></div>
                 <table v-else class="ui very basic table unstackable">
                   <tbody>
-                    <tr v-for="(val, key) in stats" :key="key">
+                    <tr v-for="(val, key) in systemStats" :key="key">
                       <td width="200">{{ key }}</td>
                       <td>{{ val }}</td>
                     </tr>
@@ -362,7 +362,7 @@ const adminTotalPages = computed(() => Math.max(1, Math.ceil(adminTotalCount.val
 
 const statsLoading = ref(false);
 const statsError = ref('');
-const stats = ref<Record<string, number>>({});
+const systemStats = ref<Record<string, number>>({});
 
 function formatDate(d: string): string {
   return new Date(d).toLocaleDateString();
@@ -377,7 +377,7 @@ async function loadStats() {
     if (token) headers['Authorization'] = `token ${token}`;
     const resp = await fetch(`${apiBase}/admin/stats`, {headers});
     if (!resp.ok) throw new Error(`Failed to load stats: ${resp.status}`);
-    stats.value = await resp.json() as Record<string, number>;
+    systemStats.value = await resp.json() as Record<string, number>;
   } catch (e) {
     statsError.value = String(e);
   } finally {
