@@ -80,6 +80,7 @@ const routes: RouteRecordRaw[] = [
   // ── User settings ─────────────────────────────────────────────────────────
   {path: '/user/settings', component: UserSettingsPage, meta: {title: 'Settings'}},
   {path: '/user/settings/:tab', component: UserSettingsPage, meta: {title: 'Settings'}},
+  {path: '/user/settings/:tab/:subsection', component: UserSettingsPage, meta: {title: 'Settings'}},
 
   // ── User dashboard (issues / pulls / milestones) ──────────────────────────
   {path: '/issues', component: UserIssuesPage, meta: {title: 'Issues'}},
