@@ -129,13 +129,14 @@ onMounted(async () => {
   document.addEventListener('click', onDocClick);
   if (props.currentUser) {
     try {
-      // Use /api/v1/user/orgs to include private memberships; fall back to public list.
       orgs.value = await getMyOrgs();
-      if (orgs.value.length === 0) {
-        orgs.value = await getUserOrgs(props.currentUser.login);
-      }
     } catch {
-      // non-critical: show empty list
+      // getMyOrgs requires authentication; fall back to public org list
+      try {
+        orgs.value = await getUserOrgs(props.currentUser.login);
+      } catch {
+        // non-critical: show empty list
+      }
     }
   }
 });
