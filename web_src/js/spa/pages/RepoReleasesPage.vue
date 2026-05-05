@@ -1,5 +1,5 @@
 <template>
-  <AppLayout pageClass="repository releases">
+  <AppLayout page-class="repository releases">
     <RepoNav
       :owner="owner"
       :repo-name="repoName"

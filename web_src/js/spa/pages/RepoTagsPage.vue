@@ -1,5 +1,5 @@
 <template>
-  <AppLayout pageClass="repository tags">
+  <AppLayout page-class="repository tags">
     <RepoNav
       :owner="owner"
       :repo-name="repoName"
@@ -29,7 +29,9 @@
                   <RouterLink
                     :to="`/${owner}/${repoName}/releases/tag/${tag.name}`"
                     class="tw-font-mono"
-                  >{{ tag.name }}</RouterLink>
+                  >
+                    {{ tag.name }}
+                  </RouterLink>
                 </div>
                 <p v-if="tag.message" class="tw-text-xs tw-text-gray-500 tw-mt-0.5 tw-pl-6">{{ tag.message }}</p>
               </td>
@@ -37,7 +39,9 @@
                 <RouterLink
                   :to="`/${owner}/${repoName}/src/commit/${tag.commit.sha}`"
                   class="ui basic label tw-font-mono"
-                >{{ tag.commit.sha.slice(0, 7) }}</RouterLink>
+                >
+                  {{ tag.commit.sha.slice(0, 7) }}
+                </RouterLink>
               </td>
               <td class="tag-download tw-text-right">
                 <a :href="tag.zipball_url" class="tw-text-blue-600 hover:tw-underline tw-mr-3">zip</a>

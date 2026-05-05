@@ -1,5 +1,5 @@
 <template>
-  <AppLayout pageClass="repository activity">
+  <AppLayout page-class="repository activity">
     <RepoNav
       :owner="owner"
       :repo-name="repoName"
@@ -57,7 +57,9 @@
                           v-if="feed.act_user"
                           :to="`/${feed.act_user.login}`"
                           class="author"
-                        >{{ feed.act_user.login }}</RouterLink>
+                        >
+                          {{ feed.act_user.login }}
+                        </RouterLink>
                         <span class="tw-ml-1 tw-text-gray-700">{{ opTypeLabel(feed.op_type) }}</span>
                         <span v-if="feed.ref_name" class="ui basic label tw-font-mono tw-text-xs tw-ml-1">
                           {{ feed.ref_name }}

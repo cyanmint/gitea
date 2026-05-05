@@ -1,5 +1,5 @@
 <template>
-  <AppLayout pageClass="repository wiki view">
+  <AppLayout page-class="repository wiki view">
     <RepoNav
       :owner="owner"
       :repo-name="repoName"
@@ -68,7 +68,9 @@
                   <RouterLink
                     :to="`/${owner}/${repoName}/wiki/${encodeURIComponent(p.title)}`"
                     class="header"
-                  >{{ p.title }}</RouterLink>
+                  >
+                    {{ p.title }}
+                  </RouterLink>
                   <div class="description">{{ formatDate(p.last_commit.author.date) }}</div>
                 </div>
               </div>

@@ -1,5 +1,5 @@
 <template>
-  <AppLayout pageClass="repository view issue pull">
+  <AppLayout page-class="repository view issue pull">
     <!-- Secondary nav (repo header + tabs) -->
     <div class="secondary-nav">
       <div class="ui container">
@@ -15,16 +15,16 @@
         <overflow-menu class="ui secondary pointing menu">
           <div class="overflow-menu-items">
             <RouterLink :to="`/${owner}/${repoName}`" class="item">
-              <SvgIcon name="octicon-code" :size="16" /> Code
+              <SvgIcon name="octicon-code" :size="16"/> Code
             </RouterLink>
             <RouterLink :to="`/${owner}/${repoName}/issues`" class="item active">
-              <SvgIcon name="octicon-issue-opened" :size="16" /> Issues
+              <SvgIcon name="octicon-issue-opened" :size="16"/> Issues
             </RouterLink>
             <RouterLink :to="`/${owner}/${repoName}/pulls`" class="item">
-              <SvgIcon name="octicon-git-pull-request" :size="16" /> Pull Requests
+              <SvgIcon name="octicon-git-pull-request" :size="16"/> Pull Requests
             </RouterLink>
             <RouterLink :to="`/${owner}/${repoName}/releases`" class="item">
-              <SvgIcon name="octicon-tag" :size="16" /> Releases
+              <SvgIcon name="octicon-tag" :size="16"/> Releases
             </RouterLink>
           </div>
         </overflow-menu>
@@ -56,7 +56,7 @@
               class="ui label"
               :class="issue.state === 'open' ? 'green' : 'purple'"
             >
-              <SvgIcon :name="issue.state === 'open' ? 'octicon-issue-opened' : 'octicon-issue-closed'" :size="16" />
+              <SvgIcon :name="issue.state === 'open' ? 'octicon-issue-opened' : 'octicon-issue-closed'" :size="16"/>
               {{ issue.state === 'open' ? 'Open' : 'Closed' }}
             </span>
             <span class="tw-ml-2">

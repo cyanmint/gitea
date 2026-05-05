@@ -1,5 +1,5 @@
 <template>
-  <AppLayout pageClass="repository issue-list">
+  <AppLayout page-class="repository issue-list">
     <!-- Secondary nav (repo header + tabs) — matches templates/repo/header.tmpl -->
     <div v-if="owner && repoName" class="secondary-nav">
       <div class="ui container">
@@ -21,16 +21,16 @@
         <overflow-menu class="ui secondary pointing menu">
           <div class="overflow-menu-items">
             <RouterLink :to="`/${owner}/${repoName}`" class="item">
-              <SvgIcon name="octicon-code" :size="16" /> Code
+              <SvgIcon name="octicon-code" :size="16"/> Code
             </RouterLink>
             <RouterLink :to="`/${owner}/${repoName}/issues`" class="item active">
-              <SvgIcon name="octicon-issue-opened" :size="16" /> Issues
+              <SvgIcon name="octicon-issue-opened" :size="16"/> Issues
             </RouterLink>
             <RouterLink :to="`/${owner}/${repoName}/pulls`" class="item">
-              <SvgIcon name="octicon-git-pull-request" :size="16" /> Pull Requests
+              <SvgIcon name="octicon-git-pull-request" :size="16"/> Pull Requests
             </RouterLink>
             <RouterLink :to="`/${owner}/${repoName}/releases`" class="item">
-              <SvgIcon name="octicon-tag" :size="16" /> Releases
+              <SvgIcon name="octicon-tag" :size="16"/> Releases
             </RouterLink>
           </div>
         </overflow-menu>
@@ -44,12 +44,12 @@
         <!-- Open/Closed state filter -->
         <h2 class="ui compact small menu small-menu-items issue-list-navbar">
           <a class="item" :class="{active: state === 'open'}" @click="setStateFilter('open')">
-            <SvgIcon name="octicon-issue-opened" :size="16" />
+            <SvgIcon name="octicon-issue-opened" :size="16"/>
             Open
             <span class="ui label tw-ml-1">{{ openCount }}</span>
           </a>
           <a class="item" :class="{active: state === 'closed'}" @click="setStateFilter('closed')">
-            <SvgIcon name="octicon-issue-closed" :size="16" />
+            <SvgIcon name="octicon-issue-closed" :size="16"/>
             Closed
             <span class="ui label tw-ml-1">{{ closedCount }}</span>
           </a>
@@ -73,10 +73,10 @@
           <div v-for="issue in issues" :key="issue.id" class="item">
             <div class="item-leading">
               <span v-if="issue.state === 'open'" class="tw-text-green-600">
-                <SvgIcon name="octicon-issue-opened" :size="16" />
+                <SvgIcon name="octicon-issue-opened" :size="16"/>
               </span>
               <span v-else class="tw-text-purple-600">
-                <SvgIcon name="octicon-issue-closed" :size="16" />
+                <SvgIcon name="octicon-issue-closed" :size="16"/>
               </span>
             </div>
             <div class="item-main">
@@ -101,7 +101,7 @@
                 </div>
                 <div v-if="issue.comments" class="item-trailing muted-links">
                   <RouterLink class="flex-text-inline" :to="`/${owner}/${repoName}/issues/${issue.number}`">
-                    <SvgIcon name="octicon-comment" :size="16" />
+                    <SvgIcon name="octicon-comment" :size="16"/>
                     {{ issue.comments }}
                   </RouterLink>
                 </div>

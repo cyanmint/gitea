@@ -1,5 +1,5 @@
 <template>
-  <AppLayout pageClass="user profile">
+  <AppLayout page-class="user profile">
     <div class="ui container">
       <!-- Loading / error -->
       <div v-if="loading" class="tw-py-16 tw-text-center">
@@ -28,11 +28,11 @@
               <div class="extra content tw-break-anywhere">
                 <ul>
                   <li v-if="user.email">
-                    <SvgIcon name="octicon-mail" :size="16" />
+                    <SvgIcon name="octicon-mail" :size="16"/>
                     <a :href="`mailto:${user.email}`" rel="nofollow">{{ user.email }}</a>
                   </li>
                   <li>
-                    <SvgIcon name="octicon-calendar" :size="16" />
+                    <SvgIcon name="octicon-calendar" :size="16"/>
                     <span>Joined {{ joinedDate }}</span>
                   </li>
                 </ul>
@@ -55,7 +55,7 @@
           <div class="ui twelve wide column tw-mb-4">
             <div class="ui secondary pointing tabular top attached borderless menu">
               <RouterLink :to="`/${user.login}`" class="item" :class="{active: !activeTab || activeTab === 'repos'}">
-                <SvgIcon name="octicon-repo" :size="16" />
+                <SvgIcon name="octicon-repo" :size="16"/>
                 Repositories
                 <span class="ui label">{{ repos.length }}</span>
               </RouterLink>
@@ -85,11 +85,11 @@
                         <i class="color-icon tw-mr-2"/>{{ repo.language }}
                       </span>
                       <RouterLink class="flex-text-inline" :to="`/${user.login}/${repo.name}/stars`">
-                        <span class="tw-contents" aria-label="Stars"><SvgIcon name="octicon-star" :size="16" /></span>
+                        <span class="tw-contents" aria-label="Stars"><SvgIcon name="octicon-star" :size="16"/></span>
                         <span>{{ repo.stars_count }}</span>
                       </RouterLink>
                       <RouterLink class="flex-text-inline" :to="`/${user.login}/${repo.name}/forks`">
-                        <span class="tw-contents" aria-label="Forks"><SvgIcon name="octicon-git-branch" :size="16" /></span>
+                        <span class="tw-contents" aria-label="Forks"><SvgIcon name="octicon-git-branch" :size="16"/></span>
                         <span>{{ repo.forks_count }}</span>
                       </RouterLink>
                     </div>

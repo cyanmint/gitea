@@ -1,5 +1,5 @@
 <template>
-  <AppLayout pageClass="ui repository branches">
+  <AppLayout page-class="ui repository branches">
     <RepoNav
       :owner="owner"
       :repo-name="repoName"
@@ -26,7 +26,9 @@
                   <RouterLink
                     :to="`/${owner}/${repoName}/src/branch/${branch.name}`"
                     class="tw-font-mono"
-                  >{{ branch.name }}</RouterLink>
+                  >
+                    {{ branch.name }}
+                  </RouterLink>
                   <span v-if="branch.name === defaultBranch" class="ui green basic mini label tw-ml-2">default</span>
                 </div>
               </td>
@@ -37,7 +39,9 @@
                 <RouterLink
                   :to="`/${owner}/${repoName}/src/branch/${branch.name}`"
                   class="ui tiny compact basic button"
-                >Browse</RouterLink>
+                >
+                  Browse
+                </RouterLink>
               </td>
             </tr>
           </tbody>

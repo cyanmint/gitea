@@ -1,5 +1,5 @@
 <template>
-  <AppLayout pageClass="repository issue-list">
+  <AppLayout page-class="repository issue-list">
     <!-- Secondary nav (repo header + tabs) — matches templates/repo/header.tmpl -->
     <RepoNav
       :owner="owner"
@@ -14,12 +14,12 @@
       <div class="list-header flex-text-block">
         <h2 class="ui compact small menu small-menu-items issue-list-navbar">
           <a class="item" :class="{active: state === 'open'}" @click="setStateFilter('open')">
-            <SvgIcon name="octicon-git-pull-request" :size="16" />
+            <SvgIcon name="octicon-git-pull-request" :size="16"/>
             Open
             <span class="ui label tw-ml-1">{{ openCount }}</span>
           </a>
           <a class="item" :class="{active: state === 'closed'}" @click="setStateFilter('closed')">
-            <SvgIcon name="octicon-git-merge" :size="16" />
+            <SvgIcon name="octicon-git-merge" :size="16"/>
             Closed
             <span class="ui label tw-ml-1">{{ closedCount }}</span>
           </a>
@@ -43,13 +43,13 @@
           <div v-for="pr in prs" :key="pr.id" class="item">
             <div class="item-leading">
               <span v-if="pr.merged" class="tw-text-purple-600">
-                <SvgIcon name="octicon-git-merge" :size="16" />
+                <SvgIcon name="octicon-git-merge" :size="16"/>
               </span>
               <span v-else-if="pr.state === 'open'" class="tw-text-green-600">
-                <SvgIcon name="octicon-git-pull-request" :size="16" />
+                <SvgIcon name="octicon-git-pull-request" :size="16"/>
               </span>
               <span v-else class="tw-text-red-600">
-                <SvgIcon name="octicon-git-pull-request-closed" :size="16" />
+                <SvgIcon name="octicon-git-pull-request-closed" :size="16"/>
               </span>
             </div>
             <div class="item-main">
@@ -72,7 +72,7 @@
                 </div>
                 <div v-if="pr.comments" class="item-trailing muted-links">
                   <RouterLink class="flex-text-inline" :to="`/${owner}/${repoName}/pulls/${pr.number}`">
-                    <SvgIcon name="octicon-comment" :size="16" />
+                    <SvgIcon name="octicon-comment" :size="16"/>
                     {{ pr.comments }}
                   </RouterLink>
                 </div>

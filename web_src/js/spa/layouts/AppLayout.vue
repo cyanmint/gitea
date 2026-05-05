@@ -23,11 +23,11 @@
       <!-- guest -->
       <template v-if="!authLoading && !currentUser">
         <RouterLink to="/user/sign_up" class="item" :class="{active: isPath('/user/sign_up')}">
-          <SvgIcon name="octicon-person" :size="16" />
+          <SvgIcon name="octicon-person" :size="16"/>
           <span class="tw-ml-1">Register</span>
         </RouterLink>
         <RouterLink to="/user/login" class="item" rel="nofollow" :class="{active: isPath('/user/login')}">
-          <SvgIcon name="octicon-sign-in" :size="16" />
+          <SvgIcon name="octicon-sign-in" :size="16"/>
           <span class="tw-ml-1">Sign In</span>
         </RouterLink>
       </template>
@@ -35,27 +35,27 @@
       <!-- signed-in: notifications bell -->
       <template v-if="currentUser">
         <RouterLink to="/notifications" class="item" :class="{active: isPath('/notifications')}" aria-label="Notifications">
-          <SvgIcon name="octicon-bell" :size="16" />
+          <SvgIcon name="octicon-bell" :size="16"/>
         </RouterLink>
 
         <!-- "Create new" dropdown -->
         <div class="ui dropdown jump item" :class="{active: createMenuOpen}" ref="createDropdownEl" @click.stop="toggleCreateMenu">
           <span class="flex-text-block">
-            <SvgIcon name="octicon-plus" :size="16" />
+            <SvgIcon name="octicon-plus" :size="16"/>
             <span class="not-mobile flex-text-block">
-              <SvgIcon name="octicon-triangle-down" :size="14" />
+              <SvgIcon name="octicon-triangle-down" :size="14"/>
             </span>
             <span class="only-mobile">Create</span>
           </span>
           <div class="menu" :class="{visible: createMenuOpen}" v-show="createMenuOpen">
             <RouterLink to="/repo/create" class="item">
-              <SvgIcon name="octicon-plus" :size="16" /> New repository
+              <SvgIcon name="octicon-plus" :size="16"/> New repository
             </RouterLink>
             <RouterLink to="/repo/migrate" class="item">
-              <SvgIcon name="octicon-repo-push" :size="16" /> Migrate repository
+              <SvgIcon name="octicon-repo-push" :size="16"/> Migrate repository
             </RouterLink>
             <RouterLink v-if="currentUser.can_create_organization !== false" to="/org/create" class="item">
-              <SvgIcon name="octicon-organization" :size="16" /> New organisation
+              <SvgIcon name="octicon-organization" :size="16"/> New organisation
             </RouterLink>
           </div>
         </div>
@@ -65,11 +65,11 @@
           <span class="text tw-flex tw-items-center">
             <span class="navbar-avatar">
               <img :src="currentUser.avatar_url" :alt="currentUser.login" width="24" height="24" class="ui avatar image tw-mr-2">
-              <SvgIcon v-if="currentUser.is_admin" name="octicon-shield-check" :size="16" class="navbar-admin-badge" />
+              <SvgIcon v-if="currentUser.is_admin" name="octicon-shield-check" :size="16" class="navbar-admin-badge"/>
             </span>
             <span class="only-mobile">{{ currentUser.login }}</span>
             <span class="not-mobile flex-text-block">
-              <SvgIcon name="octicon-triangle-down" :size="14" />
+              <SvgIcon name="octicon-triangle-down" :size="14"/>
             </span>
           </span>
           <div class="menu user-menu" :class="{visible: userMenuOpen}" v-show="userMenuOpen">
@@ -78,29 +78,29 @@
             </div>
             <div class="divider"/>
             <RouterLink :to="`/${currentUser.login}`" class="item">
-              <SvgIcon name="octicon-person" :size="16" /> Your profile
+              <SvgIcon name="octicon-person" :size="16"/> Your profile
             </RouterLink>
             <RouterLink :to="`/${currentUser.login}?tab=stars`" class="item">
-              <SvgIcon name="octicon-star" :size="16" /> Your starred repos
+              <SvgIcon name="octicon-star" :size="16"/> Your starred repos
             </RouterLink>
             <RouterLink to="/notifications/subscriptions" class="item">
-              <SvgIcon name="octicon-bell" :size="16" /> Subscriptions
+              <SvgIcon name="octicon-bell" :size="16"/> Subscriptions
             </RouterLink>
             <RouterLink to="/user/settings" class="item" :class="{active: isPath('/user/settings')}">
-              <SvgIcon name="octicon-tools" :size="16" /> Settings
+              <SvgIcon name="octicon-tools" :size="16"/> Settings
             </RouterLink>
             <a class="item" href="https://docs.gitea.com" target="_blank" rel="noopener">
-              <SvgIcon name="octicon-question" :size="16" /> Help
+              <SvgIcon name="octicon-question" :size="16"/> Help
             </a>
             <template v-if="currentUser.is_admin">
               <div class="divider"/>
               <RouterLink to="/-/admin" class="item" :class="{active: isPath('/-/admin')}">
-                <SvgIcon name="octicon-server" :size="16" /> Administration
+                <SvgIcon name="octicon-server" :size="16"/> Administration
               </RouterLink>
             </template>
             <div class="divider"/>
             <a class="item" href="#" @click.prevent="doSignOut">
-              <SvgIcon name="octicon-sign-out" :size="16" /> Sign out
+              <SvgIcon name="octicon-sign-out" :size="16"/> Sign out
             </a>
           </div>
         </div>

@@ -38,6 +38,15 @@ import RepoActivityPage from '../pages/RepoActivityPage.vue';
 import NotFoundPage from '../pages/NotFoundPage.vue';
 
 // ---------------------------------------------------------------------------
+// Auto-detect uninstalled state.
+//
+// When the Gitea backend returns HTTP 503 (Service Unavailable) it means the
+// instance has not been set up yet.  On the first navigation to any page that
+// is not already the install wizard, probe the API and redirect if needed.
+// ---------------------------------------------------------------------------
+import {apiBase} from '../spaconfig.ts';
+
+// ---------------------------------------------------------------------------
 // Route table
 //
 // Priority rules:
@@ -215,15 +224,6 @@ router.afterEach((to) => {
   const title = to.meta.title as string | undefined;
   if (title) document.title = `${title} - ${appName}`;
 });
-
-// ---------------------------------------------------------------------------
-// Auto-detect uninstalled state.
-//
-// When the Gitea backend returns HTTP 503 (Service Unavailable) it means the
-// instance has not been set up yet.  On the first navigation to any page that
-// is not already the install wizard, probe the API and redirect if needed.
-// ---------------------------------------------------------------------------
-import {apiBase} from '../spaconfig.ts';
 
 let installCheckDone = false;
 

@@ -56,7 +56,6 @@
 
           <!-- Main content -->
           <div class="flex-container-main">
-
             <!-- Options tab (default) -->
             <template v-if="activeTab === 'options'">
               <h4 class="ui top attached header">Basic Settings</h4>
@@ -231,7 +230,6 @@
                 </div>
               </div>
             </template>
-
           </div>
         </div>
       </div>

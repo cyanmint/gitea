@@ -284,11 +284,7 @@ function onDocClick(e: MouseEvent) {
   if (sortDropdownEl.value && !sortDropdownEl.value.contains(target)) sortMenuOpen.value = false;
 }
 
-function applySort() { /* reactivity handles this */ }
-void applySort;
-
 function updateRepoMilestoneCounts() {
-  const counts: Record<number, number> = {};
   for (const m of allMilestones.value) {
     if (m.milestone.state === state.value) {
       counts[m.repoId] = (counts[m.repoId] ?? 0) + 1;

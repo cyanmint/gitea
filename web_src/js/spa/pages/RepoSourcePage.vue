@@ -1,5 +1,5 @@
 <template>
-  <AppLayout pageClass="repository">
+  <AppLayout page-class="repository">
     <!-- Secondary nav — matches templates/repo/header.tmpl -->
     <RepoNav
       :owner="owner"

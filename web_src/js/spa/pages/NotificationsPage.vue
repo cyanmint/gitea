@@ -1,5 +1,5 @@
 <template>
-  <AppLayout pageClass="user notification">
+  <AppLayout page-class="user notification">
     <div class="ui container">
       <div class="flex-left-right tw-mb-[--page-spacing]">
         <div class="small-menu-items ui compact tiny menu">
@@ -18,7 +18,7 @@
           title="Mark all as read"
           @click="markAll"
         >
-          <SvgIcon name="octicon-checklist" :size="16" />
+          <SvgIcon name="octicon-checklist" :size="16"/>
         </button>
       </div>
 
@@ -62,7 +62,7 @@
               class="ui tiny basic button"
               @click="markRead(n)"
             >
-              <SvgIcon name="octicon-check" :size="14" />
+              <SvgIcon name="octicon-check" :size="14"/>
             </button>
           </div>
         </div>

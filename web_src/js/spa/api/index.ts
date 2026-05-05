@@ -1,4 +1,5 @@
 import {request, GET as _GET, POST as _POST, PATCH as _PATCH, PUT as _PUT, DELETE as _DELETE} from '../../modules/fetch.ts';
+import {localUserSettings} from '../../modules/user-settings.ts';
 import type {RequestOpts} from '../../types.ts';
 import {apiBase} from '../spaconfig.ts';
 
@@ -8,15 +9,15 @@ const TOKEN_KEY = 'gitea-spa-token';
 
 /** Returns the stored API token, or null when not signed in. */
 export function getStoredToken(): string | null {
-  return localStorage.getItem(TOKEN_KEY);
+  return localUserSettings.getString(TOKEN_KEY) || null;
 }
 
 /** Persists an API token to localStorage, or removes it when token is null. */
 export function setStoredToken(token: string | null): void {
   if (token) {
-    localStorage.setItem(TOKEN_KEY, token);
+    localUserSettings.setString(TOKEN_KEY, token);
   } else {
-    localStorage.removeItem(TOKEN_KEY);
+    localUserSettings.setString(TOKEN_KEY, '');
   }
 }
 
@@ -27,7 +28,7 @@ export function setStoredToken(token: string | null): void {
 function withToken(opts: RequestOpts = {}): RequestOpts {
   const token = getStoredToken();
   if (!token) return opts;
-  const headers = new Headers((opts.headers ?? {}) as Record<string, string>);
+  const headers = new Headers((opts.headers ?? {}));
   if (!headers.has('Authorization')) headers.set('Authorization', `token ${token}`);
   return {...opts, headers};
 }

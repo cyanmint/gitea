@@ -1,6 +1,6 @@
 <template>
   <!-- Signed-out landing page — matches templates/home.tmpl -->
-  <AppLayout v-if="!loading && !currentUser" pageClass="home">
+  <AppLayout v-if="!loading && !currentUser" page-class="home">
     <div class="tw-mb-8 tw-px-8">
       <div class="center">
         <img class="logo" width="220" height="220" :src="`${assetUrlPrefix}/img/logo.svg`" alt="Gitea">
@@ -13,7 +13,7 @@
     <div class="ui stackable middle very relaxed page grid">
       <div class="eight wide center column">
         <h1 class="hero ui icon header">
-          <SvgIcon name="octicon-flame" :size="32" /> Install
+          <SvgIcon name="octicon-flame" :size="32"/> Install
         </h1>
         <p class="large tw-text-balance">
           Easy to install, available as a binary,
@@ -24,7 +24,7 @@
       </div>
       <div class="eight wide center column">
         <h1 class="hero ui icon header">
-          <SvgIcon name="octicon-device-desktop" :size="32" /> Platform
+          <SvgIcon name="octicon-device-desktop" :size="32"/> Platform
         </h1>
         <p class="large tw-text-balance">
           Gitea runs anywhere <a href="https://go.dev/" target="_blank" rel="noopener">Go</a> can compile:
@@ -35,7 +35,7 @@
     <div class="ui stackable middle very relaxed page grid">
       <div class="eight wide center column">
         <h1 class="hero ui icon header">
-          <SvgIcon name="octicon-rocket" :size="32" /> Lightweight
+          <SvgIcon name="octicon-rocket" :size="32"/> Lightweight
         </h1>
         <p class="large tw-text-balance">
           Gitea has low minimal requirements and can run on an inexpensive Raspberry Pi.
@@ -44,7 +44,7 @@
       </div>
       <div class="eight wide center column">
         <h1 class="hero ui icon header">
-          <SvgIcon name="octicon-code" :size="32" /> License
+          <SvgIcon name="octicon-code" :size="32"/> License
         </h1>
         <p class="large tw-text-balance">
           All source code is licensed under the
@@ -55,12 +55,12 @@
   </AppLayout>
 
   <!-- Signed-in dashboard — matches templates/user/dashboard/dashboard.tmpl -->
-  <AppLayout v-else pageClass="dashboard feeds">
+  <AppLayout v-else page-class="dashboard feeds">
     <div v-if="loading" class="ui container tw-py-8">
       <div class="ui active centered inline loader"/>
     </div>
     <template v-else-if="currentUser">
-      <DashboardNav :current-user="currentUser" mode="dashboard" />
+      <DashboardNav :current-user="currentUser" mode="dashboard"/>
       <div class="ui container flex-container">
         <!-- Main feed -->
         <div class="flex-container-main">
@@ -69,7 +69,7 @@
           </div>
           <!-- Empty feed guide — matches templates/user/dashboard/guide.tmpl -->
           <div v-else-if="feeds.length === 0" class="tw-text-center tw-p-8">
-            <SvgIcon name="octicon-package" :size="24" class="tw-text-placeholder-text" />
+            <SvgIcon name="octicon-package" :size="24" class="tw-text-placeholder-text"/>
             <h3 class="tw-my-4">Welcome to Gitea</h3>
             <p class="tw-text-placeholder-text">There is nothing to see here yet! Either you haven't created any repos, or you haven't followed anyone.</p>
             <div>
@@ -103,7 +103,7 @@
           <div class="tw-flex tw-items-center tw-justify-between tw-mb-2">
             <h4 class="ui header tw-mb-0">My Repos</h4>
             <RouterLink to="/repo/create" class="ui mini primary button">
-              <SvgIcon name="octicon-plus" :size="12" />
+              <SvgIcon name="octicon-plus" :size="12"/>
             </RouterLink>
           </div>
           <div class="ui fluid small search input tw-mb-3">
@@ -121,7 +121,7 @@
           <div v-else class="flex-divided-list">
             <div v-for="repo in filteredRepos" :key="repo.id" class="item">
               <div class="flex-text-block tw-gap-1">
-                <SvgIcon :name="repo.private ? 'octicon-lock' : 'octicon-repo'" :size="14" class="tw-text-placeholder-text tw-shrink-0" />
+                <SvgIcon :name="repo.private ? 'octicon-lock' : 'octicon-repo'" :size="14" class="tw-text-placeholder-text tw-shrink-0"/>
                 <RouterLink :to="`/${repo.full_name}`" class="gt-ellipsis tw-flex-1">{{ repo.full_name }}</RouterLink>
               </div>
               <div class="tw-text-xs tw-text-placeholder-text tw-mt-1 tw-flex tw-gap-2">
