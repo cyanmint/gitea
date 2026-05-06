@@ -135,6 +135,7 @@ export type PullRequest = Issue & {
   merged: boolean;
   merged_at: string | null;
   merge_commit_sha: string | null;
+  mergeable: boolean | null;
   head: {label: string; ref: string; sha: string; repo: Repository | null};
   base: {label: string; ref: string; sha: string; repo: Repository | null};
 };
@@ -529,6 +530,35 @@ export async function listWikiPages(owner: string, repo: string, opts: Paginatio
   return resp.json();
 }
 
+/** Helper: encode a string to base64, supporting full UTF-8. */
+function toBase64(str: string): string {
+  return btoa(Array.from(new TextEncoder().encode(str), (b) => String.fromCharCode(b)).join(''));
+}
+
+/** Create a new wiki page in a repository. */
+export async function createWikiPage(owner: string, repo: string, title: string, content: string): Promise<WikiPage> {
+  const resp = await POST(`${apiBase}/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/wiki/new`, {
+    data: {title, content_base64: toBase64(content)},
+  });
+  if (!resp.ok) throw new Error(`Failed to create wiki page: ${resp.status}`);
+  return resp.json();
+}
+
+/** Update an existing wiki page. */
+export async function editWikiPage(owner: string, repo: string, pageName: string, title: string, content: string): Promise<WikiPage> {
+  const resp = await PATCH(`${apiBase}/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/wiki/page/${encodeURIComponent(pageName)}`, {
+    data: {title, content_base64: toBase64(content)},
+  });
+  if (!resp.ok) throw new Error(`Failed to edit wiki page: ${resp.status}`);
+  return resp.json();
+}
+
+/** Delete a wiki page. */
+export async function deleteWikiPage(owner: string, repo: string, pageName: string): Promise<void> {
+  const resp = await DELETE(`${apiBase}/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/wiki/page/${encodeURIComponent(pageName)}`);
+  if (!resp.ok) throw new Error(`Failed to delete wiki page: ${resp.status}`);
+}
+
 // ---- User issues/pulls ----
 
 export async function getUserIssues(opts: PaginationOpts & {state?: 'open' | 'closed'; type?: 'issues' | 'comment'; assigned?: boolean} = {}): Promise<Issue[]> {
@@ -582,10 +612,65 @@ export async function createIssue(owner: string, repo: string, data: CreateIssue
   return resp.json();
 }
 
+export type EditIssueOpts = {
+  title?: string;
+  body?: string;
+  state?: 'open' | 'closed';
+  assignees?: string[];
+  milestone?: number | null;
+};
+
+/** Edit an existing issue (title, body, state, assignees, milestone). */
+export async function editIssue(owner: string, repo: string, index: number, data: EditIssueOpts): Promise<Issue> {
+  const resp = await PATCH(`${apiBase}/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/issues/${index}`, {data});
+  if (!resp.ok) throw new Error(`Failed to edit issue: ${resp.status}`);
+  return resp.json();
+}
+
+/** Replace all labels on an issue with the given set of label IDs. */
+export async function setIssueLabels(owner: string, repo: string, index: number, labelIds: number[]): Promise<Label[]> {
+  const resp = await PUT(`${apiBase}/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/issues/${index}/labels`, {data: {labels: labelIds}});
+  if (!resp.ok) throw new Error(`Failed to set labels: ${resp.status}`);
+  return resp.json();
+}
+
 /** Post a new comment on an issue or pull request. */
 export async function createIssueComment(owner: string, repo: string, index: number, body: string): Promise<Comment> {
   const resp = await POST(`${apiBase}/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/issues/${index}/comments`, {data: {body}});
   if (!resp.ok) throw new Error(`Failed to post comment: ${resp.status}`);
+  return resp.json();
+}
+
+// ---- Pull Request mutations ----
+
+/** Get a single pull request by its index number. */
+export async function getPullRequest(owner: string, repo: string, index: number): Promise<PullRequest> {
+  const resp = await GET(`${apiBase}/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/pulls/${index}`);
+  if (!resp.ok) throw new Error(`Failed to fetch pull request: ${resp.status}`);
+  return resp.json();
+}
+
+/** Merge a pull request. style is 'merge', 'rebase', or 'squash'. */
+export async function mergePullRequest(owner: string, repo: string, index: number, style: 'merge' | 'rebase' | 'squash' = 'merge'): Promise<void> {
+  const resp = await POST(`${apiBase}/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/pulls/${index}/merge`, {
+    data: {Do: style, merge_message_field: ''},
+  });
+  if (!resp.ok) {
+    let msg = `Failed to merge pull request: ${resp.status}`;
+    try {
+      const body = await resp.json() as {message?: string};
+      if (body.message) msg = body.message;
+    } catch { /* ignore */ }
+    throw new Error(msg);
+  }
+}
+
+// ---- Repository collaborators ----
+
+/** List collaborators of a repository. */
+export async function getRepoCollaborators(owner: string, repo: string): Promise<User[]> {
+  const resp = await GET(`${apiBase}/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/collaborators`);
+  if (!resp.ok) return [];
   return resp.json();
 }
 
@@ -1174,3 +1259,51 @@ export type AuthSource = {
   is_active: boolean;
   is_sync_enabled: boolean;
 };
+
+// ---- Server settings (public, no auth required) ----
+
+export type RepoSettings = {
+  mirrors_disabled: boolean;
+  http_git_disabled: boolean;
+  migrations_disabled: boolean;
+  stars_disabled: boolean;
+  time_tracking_disabled: boolean;
+  lfs_disabled: boolean;
+};
+
+export type AttachmentSettings = {
+  enabled: boolean;
+  allowed_types: string;
+  max_files: number;
+  max_size: number;
+};
+
+export type UISettings = {
+  default_theme: string;
+  allowed_reactions: string[];
+  custom_emojis: string[];
+};
+
+export async function getSettingsAPI(): Promise<Record<string, number>> {
+  const resp = await GET(`${apiBase}/settings/api`);
+  if (!resp.ok) throw new Error(`Failed to get API settings: ${resp.status}`);
+  return resp.json();
+}
+
+export async function getSettingsRepository(): Promise<RepoSettings> {
+  const resp = await GET(`${apiBase}/settings/repository`);
+  if (!resp.ok) throw new Error(`Failed to get repo settings: ${resp.status}`);
+  return resp.json();
+}
+
+export async function getSettingsAttachment(): Promise<AttachmentSettings> {
+  const resp = await GET(`${apiBase}/settings/attachment`);
+  if (!resp.ok) throw new Error(`Failed to get attachment settings: ${resp.status}`);
+  return resp.json();
+}
+
+export async function getSettingsUI(): Promise<UISettings> {
+  const resp = await GET(`${apiBase}/settings/ui`);
+  if (!resp.ok) throw new Error(`Failed to get UI settings: ${resp.status}`);
+  return resp.json();
+}

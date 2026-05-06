@@ -448,20 +448,81 @@
           <!-- Packages -->
           <template v-else-if="section === 'packages'">
             <div class="admin-setting-content">
-              <h4 class="ui top attached header">Packages</h4>
-              <div class="ui attached segment">
-                <p class="tw-text-secondary">Package management is available in the full Gitea interface at <a :href="`${appSubUrl}/-/admin/packages`" target="_blank" rel="noopener">{{ appSubUrl }}/-/admin/packages</a>.</p>
-              </div>
+              <h4 class="ui top attached header">Packages ({{ adminTotalCount }} total)</h4>
+              <div v-if="adminLoading" class="ui active centered inline loader tw-my-4"/>
+              <div v-else-if="adminError" class="ui negative message"><p>{{ adminError }}</p></div>
+              <template v-else>
+                <div class="ui attached table segment">
+                  <table class="ui very basic table unstackable">
+                    <thead>
+                      <tr>
+                        <th>Owner</th>
+                        <th>Type</th>
+                        <th>Name</th>
+                        <th>Version</th>
+                        <th>Created</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr v-for="pkg in adminItems as AdminPackage[]" :key="pkg.id">
+                        <td><RouterLink :to="`/${pkg.owner?.login}`">{{ pkg.owner?.login }}</RouterLink></td>
+                        <td>{{ pkg.type }}</td>
+                        <td>{{ pkg.name }}</td>
+                        <td>{{ pkg.version }}</td>
+                        <td>{{ formatDate(pkg.created_at) }}</td>
+                      </tr>
+                      <tr v-if="!adminItems.length">
+                        <td class="tw-text-center" colspan="5">No packages found.</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+                <div v-if="adminTotalPages > 1" class="ui pagination menu tw-mt-4">
+                  <button class="item" :class="{disabled: adminPage <= 1}" @click="changePage(-1)">Previous</button>
+                  <div class="item">Page {{ adminPage }} of {{ adminTotalPages }}</div>
+                  <button class="item" :class="{disabled: adminPage >= adminTotalPages}" @click="changePage(1)">Next</button>
+                </div>
+              </template>
             </div>
           </template>
 
           <!-- Applications (OAuth2) -->
           <template v-else-if="section === 'applications'">
             <div class="admin-setting-content">
-              <h4 class="ui top attached header">OAuth2 Applications</h4>
-              <div class="ui attached segment">
-                <p class="tw-text-secondary">Global OAuth2 application management requires server-side forms. Manage at <a :href="`${appSubUrl}/-/admin/applications`" target="_blank" rel="noopener">{{ appSubUrl }}/-/admin/applications</a>.</p>
-              </div>
+              <h4 class="ui top attached header">OAuth2 Applications ({{ adminTotalCount }} total)</h4>
+              <div v-if="adminLoading" class="ui active centered inline loader tw-my-4"/>
+              <div v-else-if="adminError" class="ui negative message"><p>{{ adminError }}</p></div>
+              <template v-else>
+                <div class="ui attached table segment">
+                  <table class="ui very basic table unstackable">
+                    <thead>
+                      <tr>
+                        <th>Name</th>
+                        <th>Client ID</th>
+                        <th>Owner</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr v-for="app in adminItems as AdminApplication[]" :key="app.id">
+                        <td>{{ app.name }}</td>
+                        <td><code class="tw-text-xs">{{ app.client_id }}</code></td>
+                        <td>
+                          <RouterLink v-if="app.user" :to="`/${app.user.login}`">{{ app.user.login }}</RouterLink>
+                          <span v-else>&mdash;</span>
+                        </td>
+                      </tr>
+                      <tr v-if="!adminItems.length">
+                        <td class="tw-text-center" colspan="3">No OAuth2 applications found.</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+                <div v-if="adminTotalPages > 1" class="ui pagination menu tw-mt-4">
+                  <button class="item" :class="{disabled: adminPage <= 1}" @click="changePage(-1)">Previous</button>
+                  <div class="item">Page {{ adminPage }} of {{ adminTotalPages }}</div>
+                  <button class="item" :class="{disabled: adminPage >= adminTotalPages}" @click="changePage(1)">Next</button>
+                </div>
+              </template>
             </div>
           </template>
 
@@ -555,10 +616,32 @@
           <!-- Actions / Variables -->
           <template v-else-if="section === 'actions' && subsection === 'variables'">
             <div class="admin-setting-content">
-              <h4 class="ui top attached header">Global Variables</h4>
-              <div class="ui attached segment">
-                <p class="tw-text-secondary">Global Actions variable management is available in the full Gitea interface at <a :href="`${appSubUrl}/-/admin/actions/variables`" target="_blank" rel="noopener">{{ appSubUrl }}/-/admin/actions/variables</a>.</p>
-              </div>
+              <h4 class="ui top attached header">Global Variables ({{ adminTotalCount }} total)</h4>
+              <div v-if="adminLoading" class="ui active centered inline loader tw-my-4"/>
+              <div v-else-if="adminError" class="ui negative message"><p>{{ adminError }}</p></div>
+              <template v-else>
+                <div class="ui attached table segment">
+                  <table class="ui very basic table unstackable">
+                    <thead>
+                      <tr>
+                        <th>Name</th>
+                        <th>Value</th>
+                        <th>Description</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr v-for="v in adminItems as AdminVariable[]" :key="v.name">
+                        <td><code>{{ v.name }}</code></td>
+                        <td>{{ v.data }}</td>
+                        <td>{{ v.description || '—' }}</td>
+                      </tr>
+                      <tr v-if="!adminItems.length">
+                        <td class="tw-text-center" colspan="3">No global variables defined.</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </template>
             </div>
           </template>
 
@@ -566,10 +649,66 @@
           <template v-else-if="section === 'config' && !subsection">
             <div class="admin-setting-content">
               <h4 class="ui top attached header">Server Configuration Summary</h4>
-              <div v-if="adminLoading" class="ui active centered inline loader tw-my-4"/>
-              <div v-else class="ui attached segment">
-                <p class="tw-text-secondary">Configuration details are available in the full Gitea interface at <a :href="`${appSubUrl}/-/admin/config`" target="_blank" rel="noopener">{{ appSubUrl }}/-/admin/config</a>.</p>
-              </div>
+              <div v-if="configLoading" class="ui active centered inline loader tw-my-4"/>
+              <div v-else-if="configError" class="ui negative message"><p>{{ configError }}</p></div>
+              <template v-else>
+                <!-- Repository settings -->
+                <div v-if="configRepo" class="tw-mt-2">
+                  <h5 class="ui top attached header">Repository</h5>
+                  <div class="ui attached table segment">
+                    <table class="ui very basic table unstackable">
+                      <tbody>
+                        <tr><td>HTTP Git</td><td>{{ configRepo.http_git_disabled ? 'Disabled' : 'Enabled' }}</td></tr>
+                        <tr><td>Mirroring</td><td>{{ configRepo.mirrors_disabled ? 'Disabled' : 'Enabled' }}</td></tr>
+                        <tr><td>Migrations</td><td>{{ configRepo.migrations_disabled ? 'Disabled' : 'Enabled' }}</td></tr>
+                        <tr><td>Stars</td><td>{{ configRepo.stars_disabled ? 'Disabled' : 'Enabled' }}</td></tr>
+                        <tr><td>Time Tracking</td><td>{{ configRepo.time_tracking_disabled ? 'Disabled' : 'Enabled' }}</td></tr>
+                        <tr><td>LFS</td><td>{{ configRepo.lfs_disabled ? 'Disabled' : 'Enabled' }}</td></tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+                <!-- Attachment settings -->
+                <div v-if="configAttachment" class="tw-mt-2">
+                  <h5 class="ui top attached header">Attachments</h5>
+                  <div class="ui attached table segment">
+                    <table class="ui very basic table unstackable">
+                      <tbody>
+                        <tr><td>Enabled</td><td>{{ configAttachment.enabled ? 'Yes' : 'No' }}</td></tr>
+                        <tr><td>Allowed Types</td><td>{{ configAttachment.allowed_types || 'All' }}</td></tr>
+                        <tr><td>Max Files</td><td>{{ configAttachment.max_files }}</td></tr>
+                        <tr><td>Max Size</td><td>{{ configAttachment.max_size }} MiB</td></tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+                <!-- API settings -->
+                <div v-if="configAPI" class="tw-mt-2">
+                  <h5 class="ui top attached header">API</h5>
+                  <div class="ui attached table segment">
+                    <table class="ui very basic table unstackable">
+                      <tbody>
+                        <tr v-for="(val, key) in configAPI" :key="key">
+                          <td>{{ key }}</td>
+                          <td>{{ val }}</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+                <!-- UI settings -->
+                <div v-if="configUI" class="tw-mt-2">
+                  <h5 class="ui top attached header">UI</h5>
+                  <div class="ui attached table segment">
+                    <table class="ui very basic table unstackable">
+                      <tbody>
+                        <tr><td>Default Theme</td><td>{{ configUI.default_theme }}</td></tr>
+                        <tr><td>Custom Emojis</td><td>{{ configUI.custom_emojis?.join(', ') || '—' }}</td></tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </template>
             </div>
           </template>
 
@@ -586,10 +725,37 @@
           <!-- Notices -->
           <template v-else-if="section === 'notices'">
             <div class="admin-setting-content">
-              <h4 class="ui top attached header">System Notices</h4>
-              <div class="ui attached segment">
-                <p class="tw-text-secondary">System notice management is available in the full Gitea interface at <a :href="`${appSubUrl}/-/admin/notices`" target="_blank" rel="noopener">{{ appSubUrl }}/-/admin/notices</a>.</p>
-              </div>
+              <h4 class="ui top attached header">System Notices ({{ adminTotalCount }} total)</h4>
+              <div v-if="adminLoading" class="ui active centered inline loader tw-my-4"/>
+              <div v-else-if="adminError" class="ui negative message"><p>{{ adminError }}</p></div>
+              <template v-else>
+                <div class="ui attached table segment">
+                  <table class="ui very basic table unstackable">
+                    <thead>
+                      <tr>
+                        <th>Type</th>
+                        <th>Description</th>
+                        <th>Date</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr v-for="n in adminItems as AdminNotice[]" :key="n.id">
+                        <td><code>{{ n.type }}</code></td>
+                        <td class="gt-ellipsis tw-max-w-md">{{ n.description }}</td>
+                        <td>{{ formatDate(n.created_at) }}</td>
+                      </tr>
+                      <tr v-if="!adminItems.length">
+                        <td class="tw-text-center" colspan="3">No system notices.</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+                <div v-if="adminTotalPages > 1" class="ui pagination menu tw-mt-4">
+                  <button class="item" :class="{disabled: adminPage <= 1}" @click="changePage(-1)">Previous</button>
+                  <div class="item">Page {{ adminPage }} of {{ adminTotalPages }}</div>
+                  <button class="item" :class="{disabled: adminPage >= adminTotalPages}" @click="changePage(1)">Next</button>
+                </div>
+              </template>
             </div>
           </template>
         </div>
@@ -606,11 +772,13 @@ import {SvgIcon} from '../../svg.ts';
 import {appSubUrl, apiBase} from '../spaconfig.ts';
 import {
   listAdminUsers, listAdminOrgs, listAdminRepos, listAdminEmails, listAdminHooks,
-  listAdminRunners,
+  listAdminRunners, listAdminVariables, listAdminPackages, listAdminApplications, listAdminNotices,
   listAdminCronTasks, runAdminCronTask,
+  getSettingsAPI, getSettingsRepository, getSettingsAttachment, getSettingsUI,
   getStoredToken,
   type User, type Repository, type AdminEmail, type AdminHook, type AdminRunner,
-  type CronTask,
+  type CronTask, type AdminVariable, type AdminPackage, type AdminApplication, type AdminNotice,
+  type RepoSettings, type AttachmentSettings, type UISettings,
 } from '../api/index.ts';
 
 const route = useRoute();
@@ -624,7 +792,7 @@ function isInSection(s: string): boolean {
 
 const adminLoading = ref(false);
 const adminError = ref('');
-const adminItems = ref<User[] | Repository[] | AdminEmail[] | AdminHook[] | AdminRunner[]>([]);
+const adminItems = ref<User[] | Repository[] | AdminEmail[] | AdminHook[] | AdminRunner[] | AdminVariable[] | AdminPackage[] | AdminApplication[] | AdminNotice[]>([]);
 const adminPage = ref(1);
 const adminTotalCount = ref(0);
 const adminPageSize = 20;
@@ -635,6 +803,13 @@ const statsError = ref('');
 const systemStats = ref<Record<string, number>>({});
 
 const cronTasks = ref<CronTask[]>([]);
+
+const configLoading = ref(false);
+const configError = ref('');
+const configRepo = ref<RepoSettings | null>(null);
+const configAttachment = ref<AttachmentSettings | null>(null);
+const configUI = ref<UISettings | null>(null);
+const configAPI = ref<Record<string, number> | null>(null);
 
 function formatDate(d: string): string {
   return new Date(d).toLocaleDateString();
@@ -657,6 +832,27 @@ async function loadStats() {
   }
 }
 
+async function loadConfig() {
+  configLoading.value = true;
+  configError.value = '';
+  try {
+    const [repo, attachment, ui, api] = await Promise.all([
+      getSettingsRepository().catch(() => null),
+      getSettingsAttachment().catch(() => null),
+      getSettingsUI().catch(() => null),
+      getSettingsAPI().catch(() => null),
+    ]);
+    configRepo.value = repo;
+    configAttachment.value = attachment;
+    configUI.value = ui;
+    configAPI.value = api;
+  } catch (e) {
+    configError.value = String(e);
+  } finally {
+    configLoading.value = false;
+  }
+}
+
 async function runCronTask(name: string) {
   try {
     await runAdminCronTask(name);
@@ -674,9 +870,14 @@ async function loadSection() {
     await loadStats();
   }
 
-  if (!sec || sec === 'self_check' || sec === 'auths' || sec === 'applications' ||
-      sec === 'packages' || sec === 'notices' || (sec === 'actions' && sub === 'variables') ||
-      (sec === 'config') || (sec === 'monitor' && (sub === 'queues' || sub === 'stacktrace'))) {
+  if (sec === 'config' && !sub) {
+    await loadConfig();
+    return;
+  }
+
+  if (!sec || sec === 'self_check' || sec === 'auths' ||
+      (sec === 'config' && sub === 'settings') ||
+      (sec === 'monitor' && (sub === 'queues' || sub === 'stacktrace'))) {
     return;
   }
 
@@ -703,8 +904,24 @@ async function loadSection() {
       const result = await listAdminHooks({page: adminPage.value, limit: adminPageSize});
       adminItems.value = result.data;
       adminTotalCount.value = result.totalCount;
+    } else if (sec === 'packages') {
+      const result = await listAdminPackages({page: adminPage.value, limit: adminPageSize});
+      adminItems.value = result.data;
+      adminTotalCount.value = result.totalCount;
+    } else if (sec === 'applications') {
+      const result = await listAdminApplications({page: adminPage.value, limit: adminPageSize});
+      adminItems.value = result.data;
+      adminTotalCount.value = result.totalCount;
+    } else if (sec === 'notices') {
+      const result = await listAdminNotices({page: adminPage.value, limit: adminPageSize});
+      adminItems.value = result.data;
+      adminTotalCount.value = result.totalCount;
     } else if (sec === 'actions' && sub === 'runners') {
       const result = await listAdminRunners({page: adminPage.value, limit: adminPageSize});
+      adminItems.value = result.data;
+      adminTotalCount.value = result.totalCount;
+    } else if (sec === 'actions' && sub === 'variables') {
+      const result = await listAdminVariables({page: adminPage.value, limit: adminPageSize});
       adminItems.value = result.data;
       adminTotalCount.value = result.totalCount;
     } else if (sec === 'monitor' && sub === 'cron') {
