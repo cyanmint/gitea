@@ -1260,6 +1260,18 @@ export type AuthSource = {
   is_sync_enabled: boolean;
 };
 
+/** Delete a user account (admin). */
+export async function deleteAdminUser(username: string): Promise<void> {
+  const resp = await DELETE(`${apiBase}/admin/users/${encodeURIComponent(username)}`);
+  if (!resp.ok) throw new Error(`Failed to delete user: ${resp.status}`);
+}
+
+/** Delete a repository (admin). */
+export async function deleteAdminRepo(owner: string, repo: string): Promise<void> {
+  const resp = await DELETE(`${apiBase}/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}`);
+  if (!resp.ok) throw new Error(`Failed to delete repository: ${resp.status}`);
+}
+
 // ---- Server settings (public, no auth required) ----
 
 export type RepoSettings = {

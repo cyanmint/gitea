@@ -194,8 +194,14 @@
                         <td>—</td>
                         <td>{{ u.is_admin ? '✓' : '' }}</td>
                         <td>{{ formatDate(u.created) }}</td>
-                        <td>
-                          <RouterLink :to="`/-/admin/users/${u.id}/edit`">Edit</RouterLink>
+                        <td class="tw-text-right tw-whitespace-nowrap">
+                          <RouterLink :to="`/-/admin/users/${u.id}/edit`" class="ui mini button">Edit</RouterLink>
+                          <button
+                            class="ui mini red button tw-ml-1"
+                            :disabled="deletingUser === u.login"
+                            :class="{loading: deletingUser === u.login}"
+                            @click="confirmDeleteUser(u as User)"
+                          >Delete</button>
                         </td>
                       </tr>
                       <tr v-if="!adminItems.length">
@@ -233,6 +239,7 @@
                         <th>Forks</th>
                         <th>Issues</th>
                         <th>Updated</th>
+                        <th/>
                       </tr>
                     </thead>
                     <tbody>
@@ -251,9 +258,17 @@
                         <td>{{ r.forks_count }}</td>
                         <td>{{ r.open_issues_count }}</td>
                         <td>{{ formatDate(r.updated_at) }}</td>
+                        <td class="tw-text-right tw-whitespace-nowrap">
+                          <button
+                            class="ui mini red button"
+                            :disabled="deletingRepo === r.full_name"
+                            :class="{loading: deletingRepo === r.full_name}"
+                            @click="confirmDeleteRepo(r as Repository)"
+                          >Delete</button>
+                        </td>
                       </tr>
                       <tr v-if="!adminItems.length">
-                        <td class="tw-text-center" colspan="7">No results found.</td>
+                        <td class="tw-text-center" colspan="8">No results found.</td>
                       </tr>
                     </tbody>
                   </table>
@@ -361,8 +376,18 @@
           <template v-else-if="section === 'monitor' && subsection === 'queues'">
             <div class="admin-setting-content">
               <h4 class="ui top attached header">Queues</h4>
-              <div class="ui attached segment">
-                <p class="tw-text-secondary">Queue management is handled by the server process. Use the Gitea web interface at <a :href="`${appSubUrl}/-/admin/monitor/queues`" target="_blank" rel="noopener">{{ appSubUrl }}/-/admin/monitor/queues</a> for full queue controls.</p>
+              <div class="ui attached placeholder segment tw-text-center tw-py-10">
+                <div class="ui icon header">
+                  <SvgIcon name="octicon-server" :size="32" class="tw-mb-2"/>
+                  <div>Queue management requires the Gitea server interface</div>
+                </div>
+                <p class="tw-text-secondary tw-text-sm tw-mt-2 tw-mb-4">
+                  Queue status and controls are rendered server-side and cannot be accessed via the REST API.
+                </p>
+                <a :href="`${appSubUrl}/-/admin/monitor/queues`" class="ui primary button" target="_blank" rel="noopener">
+                  <SvgIcon name="octicon-link-external" :size="14"/>
+                  Open in Full Interface
+                </a>
               </div>
             </div>
           </template>
@@ -371,8 +396,18 @@
           <template v-else-if="section === 'monitor' && subsection === 'stacktrace'">
             <div class="admin-setting-content">
               <h4 class="ui top attached header">Goroutine Stacktrace</h4>
-              <div class="ui attached segment">
-                <p class="tw-text-secondary">Goroutine stacktrace requires server-side rendering. View it at <a :href="`${appSubUrl}/-/admin/monitor/stacktrace`" target="_blank" rel="noopener">{{ appSubUrl }}/-/admin/monitor/stacktrace</a>.</p>
+              <div class="ui attached placeholder segment tw-text-center tw-py-10">
+                <div class="ui icon header">
+                  <SvgIcon name="octicon-server" :size="32" class="tw-mb-2"/>
+                  <div>Stacktrace requires the Gitea server interface</div>
+                </div>
+                <p class="tw-text-secondary tw-text-sm tw-mt-2 tw-mb-4">
+                  Goroutine stacktrace is generated server-side and cannot be accessed via the REST API.
+                </p>
+                <a :href="`${appSubUrl}/-/admin/monitor/stacktrace`" class="ui primary button" target="_blank" rel="noopener">
+                  <SvgIcon name="octicon-link-external" :size="14"/>
+                  Open in Full Interface
+                </a>
               </div>
             </div>
           </template>
@@ -381,8 +416,18 @@
           <template v-else-if="section === 'self_check'">
             <div class="admin-setting-content">
               <h4 class="ui top attached header">Self Check</h4>
-              <div class="ui attached segment">
-                <p class="tw-text-secondary">Self check runs server-side diagnostics. Visit <a :href="`${appSubUrl}/-/admin/self_check`" target="_blank" rel="noopener">{{ appSubUrl }}/-/admin/self_check</a> for full checks.</p>
+              <div class="ui attached placeholder segment tw-text-center tw-py-10">
+                <div class="ui icon header">
+                  <SvgIcon name="octicon-server" :size="32" class="tw-mb-2"/>
+                  <div>Self check requires the Gitea server interface</div>
+                </div>
+                <p class="tw-text-secondary tw-text-sm tw-mt-2 tw-mb-4">
+                  Self check runs server-side diagnostics and filesystem checks that cannot be performed via the REST API.
+                </p>
+                <a :href="`${appSubUrl}/-/admin/self_check`" class="ui primary button" target="_blank" rel="noopener">
+                  <SvgIcon name="octicon-link-external" :size="14"/>
+                  Open in Full Interface
+                </a>
               </div>
             </div>
           </template>
@@ -396,8 +441,18 @@
                   <a :href="`${appSubUrl}/-/admin/auths/new`" class="ui primary tiny button" target="_blank" rel="noopener">Add Authentication Source</a>
                 </div>
               </h4>
-              <div class="ui attached segment">
-                <p class="tw-text-secondary">Authentication source management requires server-side forms. Manage at <a :href="`${appSubUrl}/-/admin/auths`" target="_blank" rel="noopener">{{ appSubUrl }}/-/admin/auths</a>.</p>
+              <div class="ui attached placeholder segment tw-text-center tw-py-10">
+                <div class="ui icon header">
+                  <SvgIcon name="octicon-server" :size="32" class="tw-mb-2"/>
+                  <div>Authentication source management requires the Gitea server interface</div>
+                </div>
+                <p class="tw-text-secondary tw-text-sm tw-mt-2 tw-mb-4">
+                  Authentication sources (LDAP, SAML, OAuth2, etc.) are configured via server-side forms and cannot be managed through the REST API.
+                </p>
+                <a :href="`${appSubUrl}/-/admin/auths`" class="ui primary button" target="_blank" rel="noopener">
+                  <SvgIcon name="octicon-link-external" :size="14"/>
+                  Open in Full Interface
+                </a>
               </div>
             </div>
           </template>
@@ -716,8 +771,18 @@
           <template v-else-if="section === 'config' && subsection === 'settings'">
             <div class="admin-setting-content">
               <h4 class="ui top attached header">Configuration Settings</h4>
-              <div class="ui attached segment">
-                <p class="tw-text-secondary">Configuration settings require server-side forms. Manage at <a :href="`${appSubUrl}/-/admin/config/settings`" target="_blank" rel="noopener">{{ appSubUrl }}/-/admin/config/settings</a>.</p>
+              <div class="ui attached placeholder segment tw-text-center tw-py-10">
+                <div class="ui icon header">
+                  <SvgIcon name="octicon-server" :size="32" class="tw-mb-2"/>
+                  <div>Configuration settings require the Gitea server interface</div>
+                </div>
+                <p class="tw-text-secondary tw-text-sm tw-mt-2 tw-mb-4">
+                  Site-wide configuration changes are applied via server-side forms and cannot be modified through the REST API.
+                </p>
+                <a :href="`${appSubUrl}/-/admin/config/settings`" class="ui primary button" target="_blank" rel="noopener">
+                  <SvgIcon name="octicon-link-external" :size="14"/>
+                  Open in Full Interface
+                </a>
               </div>
             </div>
           </template>
@@ -774,6 +839,7 @@ import {
   listAdminUsers, listAdminOrgs, listAdminRepos, listAdminEmails, listAdminHooks,
   listAdminRunners, listAdminVariables, listAdminPackages, listAdminApplications, listAdminNotices,
   listAdminCronTasks, runAdminCronTask,
+  deleteAdminUser, deleteAdminRepo,
   getSettingsAPI, getSettingsRepository, getSettingsAttachment, getSettingsUI,
   getStoredToken,
   type User, type Repository, type AdminEmail, type AdminHook, type AdminRunner,
@@ -797,6 +863,9 @@ const adminPage = ref(1);
 const adminTotalCount = ref(0);
 const adminPageSize = 20;
 const adminTotalPages = computed(() => Math.max(1, Math.ceil(adminTotalCount.value / adminPageSize)));
+
+const deletingUser = ref('');
+const deletingRepo = ref('');
 
 const statsLoading = ref(false);
 const statsError = ref('');
@@ -936,6 +1005,34 @@ async function loadSection() {
       : msg;
   } finally {
     adminLoading.value = false;
+  }
+}
+
+async function confirmDeleteUser(u: User) {
+  if (!confirm(`Delete user "${u.login}"? This action cannot be undone.`)) return;
+  deletingUser.value = u.login;
+  try {
+    await deleteAdminUser(u.login);
+    adminItems.value = (adminItems.value as User[]).filter((item) => item.login !== u.login);
+    adminTotalCount.value = Math.max(0, adminTotalCount.value - 1);
+  } catch (e) {
+    adminError.value = String(e);
+  } finally {
+    deletingUser.value = '';
+  }
+}
+
+async function confirmDeleteRepo(r: Repository) {
+  if (!confirm(`Delete repository "${r.full_name}"? This action cannot be undone and will permanently destroy all data.`)) return;
+  deletingRepo.value = r.full_name;
+  try {
+    await deleteAdminRepo(r.owner.login, r.name);
+    adminItems.value = (adminItems.value as Repository[]).filter((item) => item.full_name !== r.full_name);
+    adminTotalCount.value = Math.max(0, adminTotalCount.value - 1);
+  } catch (e) {
+    adminError.value = String(e);
+  } finally {
+    deletingRepo.value = '';
   }
 }
 
