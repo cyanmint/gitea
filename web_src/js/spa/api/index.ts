@@ -1256,9 +1256,104 @@ export type AuthSource = {
   id: number;
   name: string;
   type: number;
+  type_name: string;
   is_active: boolean;
   is_sync_enabled: boolean;
+  created: string;
+  updated: string;
 };
+
+/** List all authentication sources (admin only). */
+export async function listAdminAuthSources(): Promise<{data: AuthSource[]; totalCount: number}> {
+  const resp = await GET(`${apiBase}/admin/auths`);
+  if (!resp.ok) throw new Error(`Failed to list auth sources: ${resp.status}`);
+  const data: AuthSource[] = await resp.json();
+  return {data, totalCount: parseInt(resp.headers.get('X-Total-Count') ?? String(data.length), 10)};
+}
+
+export type QueueStat = {
+  id: number;
+  name: string;
+  type: string;
+  item_type_name: string;
+  worker_number: number;
+  worker_active_number: number;
+  worker_max_number: number;
+  queue_item_number: number;
+};
+
+/** List all managed queues and their runtime statistics (admin only). */
+export async function listAdminQueues(): Promise<QueueStat[]> {
+  const resp = await GET(`${apiBase}/admin/monitor/queues`);
+  if (!resp.ok) throw new Error(`Failed to list queues: ${resp.status}`);
+  return resp.json() as Promise<QueueStat[]>;
+}
+
+export type StackEntry = {function: string; file: string; line: number};
+export type StackLabel = {name: string; value: string};
+export type GoroutineStack = {count: number; description: string; labels?: StackLabel[]; entry?: StackEntry[]};
+export type ProcessInfo = {
+  pid: string;
+  parent_pid: string;
+  description: string;
+  start: string;
+  type: string;
+  children?: ProcessInfo[];
+  stacks?: GoroutineStack[];
+};
+export type StacktraceResult = {
+  num_goroutine: number;
+  process_count: number;
+  goroutine_count: number;
+  processes: ProcessInfo[];
+};
+
+/** Get goroutine stacktrace for all managed processes (admin only). */
+export async function getAdminStacktrace(show = 'all'): Promise<StacktraceResult> {
+  const resp = await GET(`${apiBase}/admin/monitor/stacktrace?show=${encodeURIComponent(show)}`);
+  if (!resp.ok) throw new Error(`Failed to get stacktrace: ${resp.status}`);
+  return resp.json() as Promise<StacktraceResult>;
+}
+
+export type SelfCheckResult = {
+  startup_problems: string[];
+  database_collation_mismatch: boolean;
+  database_collation_case_insensitive: boolean;
+  inconsistent_collation_columns: string[];
+  cache_error: string;
+  cache_slow: boolean;
+  cache_elapsed_ms: number;
+};
+
+/** Run admin self-check diagnostics (admin only). */
+export async function runAdminSelfCheck(): Promise<SelfCheckResult> {
+  const resp = await GET(`${apiBase}/admin/self_check`);
+  if (!resp.ok) throw new Error(`Failed to run self-check: ${resp.status}`);
+  return resp.json() as Promise<SelfCheckResult>;
+}
+
+export type ConfigSetting = {key: string; value: string};
+
+/** List all dynamic configuration settings (admin only). */
+export async function listAdminConfigSettings(): Promise<ConfigSetting[]> {
+  const resp = await GET(`${apiBase}/admin/config/settings`);
+  if (!resp.ok) throw new Error(`Failed to list config settings: ${resp.status}`);
+  return resp.json() as Promise<ConfigSetting[]>;
+}
+
+/** Update dynamic configuration settings (admin only). */
+export async function updateAdminConfigSettings(settings: ConfigSetting[]): Promise<void> {
+  const resp = await PATCH(`${apiBase}/admin/config/settings`, {data: settings});
+  if (!resp.ok) throw new Error(`Failed to update config settings: ${resp.status}`);
+}
+
+/** Activate or deactivate a user account (admin). */
+export async function setAdminUserActive(username: string, active: boolean): Promise<void> {
+  const resp = await PATCH(`${apiBase}/admin/users/${encodeURIComponent(username)}`, {
+    data: {login_name: username, source_id: 0, active},
+  });
+  if (!resp.ok) throw new Error(`Failed to update user: ${resp.status}`);
+}
 
 /** Delete a user account (admin). */
 export async function deleteAdminUser(username: string): Promise<void> {

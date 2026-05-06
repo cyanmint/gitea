@@ -179,3 +179,12 @@ func NewOption[T any](dynKey string) *Option[T] {
 func GetConfigOption(dynKey string) OptionInterface {
 	return allConfigOptions[dynKey]
 }
+
+// GetAllConfigOptionKeys returns all registered dynamic config option keys.
+func GetAllConfigOptionKeys() []string {
+	keys := make([]string, 0, len(allConfigOptions))
+	for k := range allConfigOptions {
+		keys = append(keys, k)
+	}
+	return keys
+}

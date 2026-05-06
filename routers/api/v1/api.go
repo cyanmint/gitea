@@ -1705,6 +1705,15 @@ func Routes() *web.Router {
 				m.Get("", admin.ListCronTasks)
 				m.Post("/{task}", admin.PostCronTask)
 			})
+			m.Get("/auths", admin.ListAuthSources)
+			m.Get("/self_check", admin.SelfCheck)
+			m.Group("/config", func() {
+				m.Combo("/settings").Get(admin.GetConfigSettings).Patch(admin.SetConfigSettings)
+			})
+			m.Group("/monitor", func() {
+				m.Get("/queues", admin.ListQueues)
+				m.Get("/stacktrace", admin.GetStacktrace)
+			})
 			m.Get("/orgs", admin.GetAllOrgs)
 			m.Group("/users", func() {
 				m.Get("", admin.SearchUsers)
