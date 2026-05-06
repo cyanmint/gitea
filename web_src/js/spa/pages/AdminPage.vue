@@ -201,7 +201,9 @@
                             :disabled="deletingUser === u.login"
                             :class="{loading: deletingUser === u.login}"
                             @click="confirmDeleteUser(u as User)"
-                          >Delete</button>
+                          >
+                            Delete
+                          </button>
                         </td>
                       </tr>
                       <tr v-if="!adminItems.length">
@@ -264,7 +266,9 @@
                             :disabled="deletingRepo === r.full_name"
                             :class="{loading: deletingRepo === r.full_name}"
                             @click="confirmDeleteRepo(r as Repository)"
-                          >Delete</button>
+                          >
+                            Delete
+                          </button>
                         </td>
                       </tr>
                       <tr v-if="!adminItems.length">
@@ -376,59 +380,160 @@
           <template v-else-if="section === 'monitor' && subsection === 'queues'">
             <div class="admin-setting-content">
               <h4 class="ui top attached header">Queues</h4>
-              <div class="ui attached placeholder segment tw-text-center tw-py-10">
-                <div class="ui icon header">
-                  <SvgIcon name="octicon-server" :size="32" class="tw-mb-2"/>
-                  <div>Queue management requires the Gitea server interface</div>
+              <div v-if="queuesLoading" class="ui active centered inline loader tw-my-4"/>
+              <div v-else-if="queuesError" class="ui negative message"><p>{{ queuesError }}</p></div>
+              <template v-else>
+                <div class="ui attached table segment">
+                  <table class="ui very basic table unstackable">
+                    <thead>
+                      <tr>
+                        <th>Name</th>
+                        <th>Type</th>
+                        <th>Item Type</th>
+                        <th>Workers</th>
+                        <th>Active</th>
+                        <th>Max</th>
+                        <th>Queue Items</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr v-for="q in queues" :key="q.id">
+                        <td>{{ q.name }}</td>
+                        <td><code>{{ q.type }}</code></td>
+                        <td class="gt-ellipsis tw-max-w-48">{{ q.item_type_name }}</td>
+                        <td>{{ q.worker_number }}</td>
+                        <td>{{ q.worker_active_number }}</td>
+                        <td>{{ q.worker_max_number === -1 ? '∞' : q.worker_max_number }}</td>
+                        <td>{{ q.queue_item_number }}</td>
+                      </tr>
+                      <tr v-if="!queues.length">
+                        <td class="tw-text-center" colspan="7">No queues found.</td>
+                      </tr>
+                    </tbody>
+                  </table>
                 </div>
-                <p class="tw-text-secondary tw-text-sm tw-mt-2 tw-mb-4">
-                  Queue status and controls are rendered server-side and cannot be accessed via the REST API.
-                </p>
-                <a :href="`${appSubUrl}/-/admin/monitor/queues`" class="ui primary button" target="_blank" rel="noopener">
-                  <SvgIcon name="octicon-link-external" :size="14"/>
-                  Open in Full Interface
-                </a>
-              </div>
+              </template>
             </div>
           </template>
 
           <!-- Monitor / Stacktrace -->
           <template v-else-if="section === 'monitor' && subsection === 'stacktrace'">
             <div class="admin-setting-content">
-              <h4 class="ui top attached header">Goroutine Stacktrace</h4>
-              <div class="ui attached placeholder segment tw-text-center tw-py-10">
-                <div class="ui icon header">
-                  <SvgIcon name="octicon-server" :size="32" class="tw-mb-2"/>
-                  <div>Stacktrace requires the Gitea server interface</div>
+              <h4 class="ui top attached header">
+                Goroutine Stacktrace
+                <div class="ui right tw-flex tw-gap-2">
+                  <select v-model="stacktraceShow" class="ui dropdown" @change="loadStacktrace">
+                    <option value="all">All goroutines</option>
+                    <option value="process">Process goroutines only</option>
+                  </select>
+                  <button class="ui small button" @click="loadStacktrace">
+                    <SvgIcon name="octicon-sync" :size="14"/>
+                    Refresh
+                  </button>
                 </div>
-                <p class="tw-text-secondary tw-text-sm tw-mt-2 tw-mb-4">
-                  Goroutine stacktrace is generated server-side and cannot be accessed via the REST API.
-                </p>
-                <a :href="`${appSubUrl}/-/admin/monitor/stacktrace`" class="ui primary button" target="_blank" rel="noopener">
-                  <SvgIcon name="octicon-link-external" :size="14"/>
-                  Open in Full Interface
-                </a>
-              </div>
+              </h4>
+              <div v-if="stacktraceLoading" class="ui active centered inline loader tw-my-4"/>
+              <div v-else-if="stacktraceError" class="ui negative message"><p>{{ stacktraceError }}</p></div>
+              <template v-else-if="stacktraceResult">
+                <div class="ui attached segment tw-text-sm tw-text-secondary">
+                  Goroutines: {{ stacktraceResult.num_goroutine }} runtime / {{ stacktraceResult.goroutine_count }} profiled &nbsp;|&nbsp;
+                  Processes: {{ stacktraceResult.process_count }}
+                </div>
+                <div v-for="proc in stacktraceResult.processes" :key="proc.pid" class="ui attached segment">
+                  <div class="tw-font-semibold">
+                    <code>[{{ proc.pid }}]</code> {{ proc.description }}
+                    <span class="tw-text-xs tw-text-secondary tw-ml-2">{{ proc.type }}</span>
+                  </div>
+                  <div v-for="(stack, si) in proc.stacks" :key="si" class="tw-ml-4 tw-mt-2">
+                    <div class="tw-text-xs tw-text-secondary">{{ stack.count }}× {{ stack.description }}</div>
+                    <div v-for="(entry, ei) in stack.entry" :key="ei" class="tw-font-mono tw-text-xs tw-ml-4">
+                      {{ entry.function }} <span class="tw-text-secondary">{{ entry.file }}:{{ entry.line }}</span>
+                    </div>
+                  </div>
+                  <template v-if="proc.children?.length">
+                    <div v-for="child in proc.children" :key="child.pid" class="tw-ml-4 tw-mt-1 tw-text-sm">
+                      <code>[{{ child.pid }}]</code> {{ child.description }}
+                    </div>
+                  </template>
+                </div>
+              </template>
             </div>
           </template>
 
           <!-- Self Check -->
           <template v-else-if="section === 'self_check'">
             <div class="admin-setting-content">
-              <h4 class="ui top attached header">Self Check</h4>
-              <div class="ui attached placeholder segment tw-text-center tw-py-10">
-                <div class="ui icon header">
-                  <SvgIcon name="octicon-server" :size="32" class="tw-mb-2"/>
-                  <div>Self check requires the Gitea server interface</div>
+              <h4 class="ui top attached header">
+                Self Check
+                <div class="ui right">
+                  <button class="ui small button" @click="loadSelfCheck">
+                    <SvgIcon name="octicon-sync" :size="14"/>
+                    Refresh
+                  </button>
                 </div>
-                <p class="tw-text-secondary tw-text-sm tw-mt-2 tw-mb-4">
-                  Self check runs server-side diagnostics and filesystem checks that cannot be performed via the REST API.
-                </p>
-                <a :href="`${appSubUrl}/-/admin/self_check`" class="ui primary button" target="_blank" rel="noopener">
-                  <SvgIcon name="octicon-link-external" :size="14"/>
-                  Open in Full Interface
-                </a>
-              </div>
+              </h4>
+              <div v-if="selfCheckLoading" class="ui active centered inline loader tw-my-4"/>
+              <div v-else-if="selfCheckError" class="ui negative message"><p>{{ selfCheckError }}</p></div>
+              <template v-else-if="selfCheckResult">
+                <div class="ui attached table segment">
+                  <table class="ui very basic table">
+                    <tbody>
+                      <tr>
+                        <td>Startup Problems</td>
+                        <td>
+                          <span v-if="!selfCheckResult.startup_problems.length" class="tw-text-green-600">None</span>
+                          <ul v-else class="tw-pl-4 tw-my-0">
+                            <li v-for="(p, i) in selfCheckResult.startup_problems" :key="i" class="tw-text-red-600">{{ p }}</li>
+                          </ul>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td>Database Collation Mismatch</td>
+                        <td>
+                          <SvgIcon
+                            :name="selfCheckResult.database_collation_mismatch ? 'octicon-x-circle' : 'octicon-check-circle'" :size="16"
+                            :class="selfCheckResult.database_collation_mismatch ? 'tw-text-red-600' : 'tw-text-green-600'"
+                          />
+                          {{ selfCheckResult.database_collation_mismatch ? 'Yes' : 'No' }}
+                        </td>
+                      </tr>
+                      <tr>
+                        <td>Collation Case-Insensitive</td>
+                        <td>
+                          <SvgIcon
+                            :name="selfCheckResult.database_collation_case_insensitive ? 'octicon-alert' : 'octicon-check-circle'" :size="16"
+                            :class="selfCheckResult.database_collation_case_insensitive ? 'tw-text-yellow-600' : 'tw-text-green-600'"
+                          />
+                          {{ selfCheckResult.database_collation_case_insensitive ? 'Yes (may cause issues)' : 'No' }}
+                        </td>
+                      </tr>
+                      <tr>
+                        <td>Inconsistent Collation Columns</td>
+                        <td>
+                          <span v-if="!selfCheckResult.inconsistent_collation_columns.length" class="tw-text-green-600">None</span>
+                          <ul v-else class="tw-pl-4 tw-my-0">
+                            <li v-for="(c, i) in selfCheckResult.inconsistent_collation_columns" :key="i" class="tw-text-red-600">{{ c }}</li>
+                          </ul>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td>Cache</td>
+                        <td>
+                          <span v-if="selfCheckResult.cache_error" class="tw-text-red-600">Error: {{ selfCheckResult.cache_error }}</span>
+                          <span v-else>
+                            <SvgIcon
+                              :name="selfCheckResult.cache_slow ? 'octicon-alert' : 'octicon-check-circle'" :size="16"
+                              :class="selfCheckResult.cache_slow ? 'tw-text-yellow-600' : 'tw-text-green-600'"
+                            />
+                            {{ selfCheckResult.cache_elapsed_ms }}ms
+                            <span v-if="selfCheckResult.cache_slow" class="tw-text-yellow-600">(slow)</span>
+                          </span>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </template>
             </div>
           </template>
 
@@ -441,19 +546,39 @@
                   <a :href="`${appSubUrl}/-/admin/auths/new`" class="ui primary tiny button" target="_blank" rel="noopener">Add Authentication Source</a>
                 </div>
               </h4>
-              <div class="ui attached placeholder segment tw-text-center tw-py-10">
-                <div class="ui icon header">
-                  <SvgIcon name="octicon-server" :size="32" class="tw-mb-2"/>
-                  <div>Authentication source management requires the Gitea server interface</div>
+              <div v-if="authsLoading" class="ui active centered inline loader tw-my-4"/>
+              <div v-else-if="authsError" class="ui negative message"><p>{{ authsError }}</p></div>
+              <template v-else>
+                <div class="ui attached table segment">
+                  <table class="ui very basic table unstackable">
+                    <thead>
+                      <tr>
+                        <th>Name</th>
+                        <th>Type</th>
+                        <th>Enabled</th>
+                        <th>Sync</th>
+                        <th>Created</th>
+                        <th>Updated</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr v-for="src in authSources" :key="src.id">
+                        <td>
+                          <a :href="`${appSubUrl}/-/admin/auths/${src.id}`" target="_blank" rel="noopener">{{ src.name }}</a>
+                        </td>
+                        <td>{{ src.type_name }}</td>
+                        <td><SvgIcon :name="src.is_active ? 'octicon-check' : 'octicon-x'" :size="16"/></td>
+                        <td><SvgIcon :name="src.is_sync_enabled ? 'octicon-check' : 'octicon-x'" :size="16"/></td>
+                        <td>{{ formatDate(src.created) }}</td>
+                        <td>{{ formatDate(src.updated) }}</td>
+                      </tr>
+                      <tr v-if="!authSources.length">
+                        <td class="tw-text-center" colspan="6">No authentication sources configured.</td>
+                      </tr>
+                    </tbody>
+                  </table>
                 </div>
-                <p class="tw-text-secondary tw-text-sm tw-mt-2 tw-mb-4">
-                  Authentication sources (LDAP, SAML, OAuth2, etc.) are configured via server-side forms and cannot be managed through the REST API.
-                </p>
-                <a :href="`${appSubUrl}/-/admin/auths`" class="ui primary button" target="_blank" rel="noopener">
-                  <SvgIcon name="octicon-link-external" :size="14"/>
-                  Open in Full Interface
-                </a>
-              </div>
+              </template>
             </div>
           </template>
 
@@ -770,20 +895,43 @@
           <!-- Config Settings -->
           <template v-else-if="section === 'config' && subsection === 'settings'">
             <div class="admin-setting-content">
-              <h4 class="ui top attached header">Configuration Settings</h4>
-              <div class="ui attached placeholder segment tw-text-center tw-py-10">
-                <div class="ui icon header">
-                  <SvgIcon name="octicon-server" :size="32" class="tw-mb-2"/>
-                  <div>Configuration settings require the Gitea server interface</div>
+              <h4 class="ui top attached header">
+                Configuration Settings
+                <div class="ui right tw-flex tw-gap-2">
+                  <button class="ui small primary button" :disabled="configSettingsSaving || !configSettingsDirty" @click="saveConfigSettings">
+                    <SvgIcon name="octicon-check" :size="14"/>
+                    Save Changes
+                  </button>
                 </div>
-                <p class="tw-text-secondary tw-text-sm tw-mt-2 tw-mb-4">
-                  Site-wide configuration changes are applied via server-side forms and cannot be modified through the REST API.
-                </p>
-                <a :href="`${appSubUrl}/-/admin/config/settings`" class="ui primary button" target="_blank" rel="noopener">
-                  <SvgIcon name="octicon-link-external" :size="14"/>
-                  Open in Full Interface
-                </a>
-              </div>
+              </h4>
+              <div v-if="configSettingsLoading" class="ui active centered inline loader tw-my-4"/>
+              <div v-else-if="configSettingsError" class="ui negative message"><p>{{ configSettingsError }}</p></div>
+              <div v-else-if="configSettingsSaveError" class="ui negative message"><p>{{ configSettingsSaveError }}</p></div>
+              <div v-else-if="configSettingsSaved" class="ui positive message"><p>Settings saved.</p></div>
+              <template v-if="configSettingsList.length">
+                <div class="ui attached table segment">
+                  <table class="ui very basic table">
+                    <thead>
+                      <tr>
+                        <th>Key</th>
+                        <th>Value</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr v-for="(s, i) in configSettingsList" :key="s.key">
+                        <td><code>{{ s.key }}</code></td>
+                        <td>
+                          <input
+                            class="ui input tw-w-full"
+                            :value="s.value"
+                            @input="onConfigSettingInput(i, ($event.target as HTMLInputElement).value)"
+                          >
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </template>
             </div>
           </template>
 
@@ -841,10 +989,13 @@ import {
   listAdminCronTasks, runAdminCronTask,
   deleteAdminUser, deleteAdminRepo,
   getSettingsAPI, getSettingsRepository, getSettingsAttachment, getSettingsUI,
+  listAdminAuthSources, runAdminSelfCheck, listAdminConfigSettings, updateAdminConfigSettings,
+  listAdminQueues, getAdminStacktrace,
   getStoredToken,
   type User, type Repository, type AdminEmail, type AdminHook, type AdminRunner,
   type CronTask, type AdminVariable, type AdminPackage, type AdminApplication, type AdminNotice,
   type RepoSettings, type AttachmentSettings, type UISettings,
+  type AuthSource, type SelfCheckResult, type ConfigSetting, type QueueStat, type StacktraceResult,
 } from '../api/index.ts';
 
 const route = useRoute();
@@ -879,6 +1030,36 @@ const configRepo = ref<RepoSettings | null>(null);
 const configAttachment = ref<AttachmentSettings | null>(null);
 const configUI = ref<UISettings | null>(null);
 const configAPI = ref<Record<string, number> | null>(null);
+
+// Auth sources
+const authsLoading = ref(false);
+const authsError = ref('');
+const authSources = ref<AuthSource[]>([]);
+
+// Self check
+const selfCheckLoading = ref(false);
+const selfCheckError = ref('');
+const selfCheckResult = ref<SelfCheckResult | null>(null);
+
+// Config settings (editable)
+const configSettingsLoading = ref(false);
+const configSettingsError = ref('');
+const configSettingsSaveError = ref('');
+const configSettingsSaved = ref(false);
+const configSettingsSaving = ref(false);
+const configSettingsList = ref<ConfigSetting[]>([]);
+const configSettingsDirty = ref(false);
+
+// Monitor queues
+const queuesLoading = ref(false);
+const queuesError = ref('');
+const queues = ref<QueueStat[]>([]);
+
+// Monitor stacktrace
+const stacktraceLoading = ref(false);
+const stacktraceError = ref('');
+const stacktraceResult = ref<StacktraceResult | null>(null);
+const stacktraceShow = ref('all');
 
 function formatDate(d: string): string {
   return new Date(d).toLocaleDateString();
@@ -931,6 +1112,106 @@ async function runCronTask(name: string) {
   }
 }
 
+async function loadAuthSources() {
+  authsLoading.value = true;
+  authsError.value = '';
+  try {
+    const result = await listAdminAuthSources();
+    authSources.value = result.data;
+  } catch (e) {
+    const msg = String(e);
+    authsError.value = msg.includes('403') || msg.includes('401')
+      ? 'Access denied. You must be a site administrator to view this section.'
+      : msg;
+  } finally {
+    authsLoading.value = false;
+  }
+}
+
+async function loadSelfCheck() {
+  selfCheckLoading.value = true;
+  selfCheckError.value = '';
+  try {
+    selfCheckResult.value = await runAdminSelfCheck();
+  } catch (e) {
+    const msg = String(e);
+    selfCheckError.value = msg.includes('403') || msg.includes('401')
+      ? 'Access denied. You must be a site administrator to view this section.'
+      : msg;
+  } finally {
+    selfCheckLoading.value = false;
+  }
+}
+
+async function loadConfigSettings() {
+  configSettingsLoading.value = true;
+  configSettingsError.value = '';
+  configSettingsDirty.value = false;
+  configSettingsSaved.value = false;
+  try {
+    configSettingsList.value = await listAdminConfigSettings();
+  } catch (e) {
+    const msg = String(e);
+    configSettingsError.value = msg.includes('403') || msg.includes('401')
+      ? 'Access denied. You must be a site administrator to view this section.'
+      : msg;
+  } finally {
+    configSettingsLoading.value = false;
+  }
+}
+
+function onConfigSettingInput(index: number, value: string) {
+  configSettingsList.value[index] = {...configSettingsList.value[index], value};
+  configSettingsDirty.value = true;
+  configSettingsSaved.value = false;
+  configSettingsSaveError.value = '';
+}
+
+async function saveConfigSettings() {
+  configSettingsSaving.value = true;
+  configSettingsSaveError.value = '';
+  configSettingsSaved.value = false;
+  try {
+    await updateAdminConfigSettings(configSettingsList.value);
+    configSettingsDirty.value = false;
+    configSettingsSaved.value = true;
+  } catch (e) {
+    configSettingsSaveError.value = String(e);
+  } finally {
+    configSettingsSaving.value = false;
+  }
+}
+
+async function loadQueues() {
+  queuesLoading.value = true;
+  queuesError.value = '';
+  try {
+    queues.value = await listAdminQueues();
+  } catch (e) {
+    const msg = String(e);
+    queuesError.value = msg.includes('403') || msg.includes('401')
+      ? 'Access denied. You must be a site administrator to view this section.'
+      : msg;
+  } finally {
+    queuesLoading.value = false;
+  }
+}
+
+async function loadStacktrace() {
+  stacktraceLoading.value = true;
+  stacktraceError.value = '';
+  try {
+    stacktraceResult.value = await getAdminStacktrace(stacktraceShow.value);
+  } catch (e) {
+    const msg = String(e);
+    stacktraceError.value = msg.includes('403') || msg.includes('401')
+      ? 'Access denied. You must be a site administrator to view this section.'
+      : msg;
+  } finally {
+    stacktraceLoading.value = false;
+  }
+}
+
 async function loadSection() {
   const sec = section.value;
   const sub = subsection.value;
@@ -944,9 +1225,32 @@ async function loadSection() {
     return;
   }
 
-  if (!sec || sec === 'self_check' || sec === 'auths' ||
-      (sec === 'config' && sub === 'settings') ||
-      (sec === 'monitor' && (sub === 'queues' || sub === 'stacktrace'))) {
+  if (sec === 'auths') {
+    await loadAuthSources();
+    return;
+  }
+
+  if (sec === 'self_check') {
+    await loadSelfCheck();
+    return;
+  }
+
+  if (sec === 'config' && sub === 'settings') {
+    await loadConfigSettings();
+    return;
+  }
+
+  if (sec === 'monitor' && sub === 'queues') {
+    await loadQueues();
+    return;
+  }
+
+  if (sec === 'monitor' && sub === 'stacktrace') {
+    await loadStacktrace();
+    return;
+  }
+
+  if (!sec) {
     return;
   }
 
